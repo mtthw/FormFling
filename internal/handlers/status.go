@@ -4,7 +4,6 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"net/url"
 
 	"formfling/internal/config"
 )
@@ -48,26 +47,11 @@ func (h *StatusHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		message = "There was an error sending your message. Please try again."
 	}
 
-	// Get redirect URL from referer or query parameter
-	redirectURL := r.URL.Query().Get("redirect")
-	if redirectURL == "" {
-		// Try to get referer, but clean it of status parameters
-		if referer := r.Header.Get("Referer"); referer != "" {
-			// Remove formfling_status parameter from referer
-			if u, err := url.Parse(referer); err == nil {
-				query := u.Query()
-				query.Del("formfling_status")
-				u.RawQuery = query.Encode()
-				redirectURL = u.String()
-			}
-		}
-	}
-
 	data := StatusPageData{
 		Status:      status,
 		FormTitle:   h.config.FormTitle,
 		Message:     message,
-		RedirectURL: redirectURL,
+		RedirectURL: h.config.StatusRedirectURL,
 	}
 
 	if err := h.statusTemplate.Execute(w, data); err != nil {

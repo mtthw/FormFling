@@ -7,7 +7,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"formfling/internal/config"
@@ -155,8 +154,7 @@ func (h *SubmitHandler) handleSuccess(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Handle form submission with redirect
-	redirectURL := h.getRedirectURL(r, "success")
-	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+	http.Redirect(w, r, "/status?type=success", http.StatusSeeOther)
 }
 
 func (h *SubmitHandler) handleError(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int) {
@@ -170,8 +168,7 @@ func (h *SubmitHandler) handleError(w http.ResponseWriter, r *http.Request, erro
 	}
 
 	// Handle form submission with redirect to error page
-	redirectURL := h.getRedirectURL(r, "error")
-	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+	http.Redirect(w, r, "/status?type=error", http.StatusSeeOther)
 }
 
 func (h *SubmitHandler) isAjaxRequest(r *http.Request) bool {
@@ -179,36 +176,4 @@ func (h *SubmitHandler) isAjaxRequest(r *http.Request) bool {
 	return r.Header.Get("X-Requested-With") == "XMLHttpRequest" ||
 		r.Header.Get("Content-Type") == "application/json" ||
 		strings.Contains(r.Header.Get("Accept"), "application/json")
-}
-
-func (h *SubmitHandler) getRedirectURL(r *http.Request, status string) string {
-	// Only use explicit redirect URL from form data
-	if redirectURL := r.FormValue("_redirect"); redirectURL != "" {
-		// Add status parameter to the explicit redirect
-		return h.addStatusParam(redirectURL, status)
-	}
-
-	// Always redirect to status page, pass referer as redirect parameter for the "Go Back" functionality
-	referer := r.Header.Get("Referer")
-	if referer != "" {
-		// Pass the referer as redirect parameter so status page can redirect back
-		return fmt.Sprintf("/status?type=%s&redirect=%s", status, url.QueryEscape(referer))
-	}
-
-	// If no referer, just redirect to status page
-	return fmt.Sprintf("/status?type=%s", status)
-}
-
-func (h *SubmitHandler) addStatusParam(baseURL, status string) string {
-	parsedURL, err := url.Parse(baseURL)
-	if err != nil {
-		return fmt.Sprintf("/status?type=%s", status)
-	}
-
-	// Add or update the status parameter
-	query := parsedURL.Query()
-	query.Set("formfling_status", status)
-	parsedURL.RawQuery = query.Encode()
-
-	return parsedURL.String()
 }

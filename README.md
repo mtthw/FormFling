@@ -13,7 +13,7 @@ Haven't you always wanted a contact form on your website, but to keep your email
 - Gmail SMTP support
 - Beautiful HTML email templates
 - Origin-based security
-- Custom redirect URLs
+- Configured status page return URL
 - Health check endpoint
 - reCAPTCHA v3 bot protection
 - Docker ready
@@ -60,6 +60,7 @@ Configure via environment variables:
 - `SMTP_PORT` - SMTP port (default: 587)
 - `ALLOWED_ORIGINS` - Comma-separated allowed domains (default: all)
 - `FORM_TITLE` - Form name in emails (default: Contact Me)
+- `STATUS_REDIRECT_URL` - Optional absolute HTTP(S) URL for the status page's return link and automatic redirect
 - `RECAPTCHA_SITE_KEY` - reCAPTCHA v3 site key
 - `RECAPTCHA_SECRET_KEY` - reCAPTCHA v3 secret key
 - `RECAPTCHA_MIN_SCORE` - Minimum score threshold (default: 0.5)
@@ -164,6 +165,8 @@ document.getElementById('contact-form').addEventListener('submit', function(e) {
 - `GET /status` - Status page
 - `GET /test_form` - reCAPTCHA token generator (when `ENABLE_TEST_FORM=true`)
 
+Browser form submissions return to `/status?type=success` or `/status?type=error`. Set `STATUS_REDIRECT_URL` in Docker to show a return link and redirect visitors there after five seconds. The return destination ignores request supplied `redirect`, `Referer`, and `_redirect` values.
+
 **Response format:**
 ```json
 {"status": "message sent"}
@@ -227,7 +230,7 @@ Template variables:
 - `{{.Status}}` - Status type (`success` or `error`)
 - `{{.FormTitle}}` - The form title
 - `{{.Message}}` - Status message to display
-- `{{.RedirectURL}}` - URL to redirect the user back to (if any)
+- `{{.RedirectURL}}` - Configured `STATUS_REDIRECT_URL` (if any)
 
 ## Development
 

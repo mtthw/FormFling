@@ -23,6 +23,9 @@ func main() {
 	if cfg.FromEmail == "" || cfg.ToEmail == "" {
 		log.Fatal("FROM_EMAIL and TO_EMAIL are required")
 	}
+	if err := config.ValidateStatusRedirectURL(cfg.StatusRedirectURL); err != nil {
+		log.Fatal(err)
+	}
 
 	// Initialize services
 	emailService := services.NewEmailService(cfg)

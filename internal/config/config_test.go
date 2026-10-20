@@ -11,6 +11,8 @@ func TestLoad(t *testing.T) {
 	originalSMTPHost := os.Getenv("SMTP_HOST")
 	originalOrigins := os.Getenv("ALLOWED_ORIGINS")
 	originalEmailTemplate := os.Getenv("EMAIL_TEMPLATE")
+	originalStatusTemplate := os.Getenv("STATUS_TEMPLATE")
+	originalStatusRedirect := os.Getenv("STATUS_REDIRECT_URL")
 	originalRecaptchaSecret := os.Getenv("RECAPTCHA_SECRET_KEY")
 	originalRecaptchaScore := os.Getenv("RECAPTCHA_MIN_SCORE")
 	originalRecaptchaAction := os.Getenv("RECAPTCHA_ACTION")
@@ -21,6 +23,8 @@ func TestLoad(t *testing.T) {
 		os.Setenv("SMTP_HOST", originalSMTPHost)
 		os.Setenv("ALLOWED_ORIGINS", originalOrigins)
 		os.Setenv("EMAIL_TEMPLATE", originalEmailTemplate)
+		os.Setenv("STATUS_TEMPLATE", originalStatusTemplate)
+		os.Setenv("STATUS_REDIRECT_URL", originalStatusRedirect)
 		os.Setenv("RECAPTCHA_SECRET_KEY", originalRecaptchaSecret)
 		os.Setenv("RECAPTCHA_MIN_SCORE", originalRecaptchaScore)
 		os.Setenv("RECAPTCHA_ACTION", originalRecaptchaAction)
@@ -31,6 +35,8 @@ func TestLoad(t *testing.T) {
 	os.Unsetenv("SMTP_HOST")
 	os.Unsetenv("ALLOWED_ORIGINS")
 	os.Unsetenv("EMAIL_TEMPLATE")
+	os.Unsetenv("STATUS_TEMPLATE")
+	os.Unsetenv("STATUS_REDIRECT_URL")
 	os.Unsetenv("RECAPTCHA_SECRET_KEY")
 	os.Unsetenv("RECAPTCHA_MIN_SCORE")
 	os.Unsetenv("RECAPTCHA_ACTION")
@@ -56,6 +62,9 @@ func TestLoad(t *testing.T) {
 	if cfg.StatusTemplate != "./web/templates/status_template.html" {
 		t.Errorf("Expected status template './web/templates/status_template.html', got %s", cfg.StatusTemplate)
 	}
+	if cfg.StatusRedirectURL != "" {
+		t.Errorf("Expected no default status redirect, got %s", cfg.StatusRedirectURL)
+	}
 
 	// Test reCAPTCHA defaults
 	if cfg.RecaptchaEnabled {
@@ -76,6 +85,7 @@ func TestLoad(t *testing.T) {
 	os.Setenv("ALLOWED_ORIGINS", "https://example.com,https://test.com")
 	os.Setenv("EMAIL_TEMPLATE", "/custom/email_template.html")
 	os.Setenv("STATUS_TEMPLATE", "/custom/status_template.html")
+	os.Setenv("STATUS_REDIRECT_URL", "https://example.com/contact")
 	os.Setenv("RECAPTCHA_SECRET_KEY", "test-secret-key")
 	os.Setenv("RECAPTCHA_MIN_SCORE", "0.8")
 	os.Setenv("RECAPTCHA_ACTION", "contact")
@@ -105,6 +115,9 @@ func TestLoad(t *testing.T) {
 	if cfg.StatusTemplate != "/custom/status_template.html" {
 		t.Errorf("Expected status template '/custom/status_template.html', got %s", cfg.StatusTemplate)
 	}
+	if cfg.StatusRedirectURL != "https://example.com/contact" {
+		t.Errorf("Expected configured status redirect, got %s", cfg.StatusRedirectURL)
+	}
 
 	// Test reCAPTCHA custom values
 	if !cfg.RecaptchaEnabled {
@@ -121,6 +134,27 @@ func TestLoad(t *testing.T) {
 
 	if cfg.RecaptchaAction != "contact" {
 		t.Errorf("Expected reCAPTCHA action 'contact', got %s", cfg.RecaptchaAction)
+	}
+}
+
+func TestValidateStatusRedirectURL(t *testing.T) {
+	tests := []struct {
+		url   string
+		valid bool
+	}{
+		{"", true},
+		{"https://example.com/contact?from=form", true},
+		{"http://localhost:3000/contact", true},
+		{"javascript:alert(1)", false},
+		{"//example.com/contact", false},
+		{"https:example.com/contact", false},
+		{"https://user@example.com/contact", false},
+	}
+	for _, tt := range tests {
+		err := ValidateStatusRedirectURL(tt.url)
+		if (err == nil) != tt.valid {
+			t.Errorf("ValidateStatusRedirectURL(%q) error = %v, want valid = %v", tt.url, err, tt.valid)
+		}
 	}
 }
 

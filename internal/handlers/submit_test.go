@@ -68,12 +68,8 @@ func TestSubmitHandler_RedirectMode(t *testing.T) {
 
 	// Should have location header with success status
 	location := rr.Header().Get("Location")
-	if !strings.Contains(location, "/status?type=success&redirect=https%3A%2F%2Fexample.com%2Fcontact") {
-		t.Error(
-			"Expected redirect URL to contain ",
-			"/status?type=success&redirect=https%3A%2F%2Fexample.com%2Fcontact",
-			", got ", location,
-		)
+	if location != "/status?type=success" {
+		t.Errorf("Expected status page redirect, got %s", location)
 	}
 }
 
@@ -273,7 +269,7 @@ func TestSubmitHandler_JSONRequest_ParseError(t *testing.T) {
 	}
 }
 
-func TestSubmitHandler_CustomRedirect(t *testing.T) {
+func TestSubmitHandler_IgnoresCustomRedirect(t *testing.T) {
 	cfg := &config.Config{
 		SMTPHost:     "smtp.gmail.com",
 		SMTPPort:     587,
@@ -304,13 +300,10 @@ func TestSubmitHandler_CustomRedirect(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.Handle(rr, req)
 
-	// Should redirect to custom URL
+	// A request-supplied redirect cannot bypass the status page.
 	location := rr.Header().Get("Location")
-	if !strings.Contains(location, "example.com/thank-you") {
-		t.Errorf("Expected redirect to custom URL, got %s", location)
-	}
-	if !strings.Contains(location, "formfling_status=success") {
-		t.Errorf("Expected redirect URL to contain status parameter, got %s", location)
+	if location != "/status?type=success" {
+		t.Errorf("Expected status page redirect, got %s", location)
 	}
 }
 
@@ -351,12 +344,8 @@ func TestSubmitHandler_ValidationError(t *testing.T) {
 	}
 
 	location := rr.Header().Get("Location")
-	if !strings.Contains(location, "/status?type=error&redirect=https%3A%2F%2Fexample.com%2Fcontact") {
-		t.Error(
-			"Expected redirect URL to contain ",
-			"/status?type=error&redirect=https%3A%2F%2Fexample.com%2Fcontact",
-			", got ", location,
-		)
+	if location != "/status?type=error" {
+		t.Errorf("Expected error status page redirect, got %s", location)
 	}
 }
 
@@ -548,101 +537,6 @@ func TestIsAjaxRequest(t *testing.T) {
 			result := handler.isAjaxRequest(req)
 			if result != tt.expected {
 				t.Errorf("isAjaxRequest() = %v, expected %v", result, tt.expected)
-			}
-		})
-	}
-}
-
-func TestGetRedirectURL(t *testing.T) {
-	cfg := &config.Config{}
-	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(cfg, emailService, nil)
-
-	tests := []struct {
-		name         string
-		formData     url.Values
-		referer      string
-		status       string
-		containsText string
-	}{
-		{
-			name: "Custom redirect URL",
-			formData: url.Values{
-				"_redirect": {"https://example.com/thank-you"},
-			},
-			status:       "success",
-			containsText: "formfling_status=success",
-		},
-		{
-			name:         "Referer with success",
-			formData:     url.Values{},
-			referer:      "https://example.com/contact",
-			status:       "success",
-			containsText: "/status?type=success&redirect=https%3A%2F%2Fexample.com%2Fcontact",
-		},
-		{
-			name:         "No referer",
-			formData:     url.Values{},
-			referer:      "",
-			status:       "error",
-			containsText: "/status?type=error",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req, _ := http.NewRequest("POST", "/submit", strings.NewReader(tt.formData.Encode()))
-			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			if tt.referer != "" {
-				req.Header.Set("Referer", tt.referer)
-			}
-			req.ParseForm()
-
-			result := handler.getRedirectURL(req, tt.status)
-
-			if !strings.Contains(result, tt.containsText) {
-				t.Errorf("Expected URL to contain %s, got %s", tt.containsText, result)
-			}
-		})
-	}
-}
-
-func TestAddStatusParam(t *testing.T) {
-	cfg := &config.Config{}
-	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(cfg, emailService, nil)
-
-	tests := []struct {
-		name     string
-		baseURL  string
-		status   string
-		expected string
-	}{
-		{
-			name:     "Simple URL",
-			baseURL:  "https://example.com/contact",
-			status:   "success",
-			expected: "formfling_status=success",
-		},
-		{
-			name:     "URL with existing params",
-			baseURL:  "https://example.com/contact?foo=bar",
-			status:   "error",
-			expected: "formfling_status=error",
-		},
-		{
-			name:     "Invalid URL gets parameter anyway",
-			baseURL:  "not-a-valid-url",
-			status:   "success",
-			expected: "formfling_status=success", // url.Parse is lenient
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := handler.addStatusParam(tt.baseURL, tt.status)
-			if !strings.Contains(result, tt.expected) {
-				t.Errorf("Expected URL to contain %s, got %s", tt.expected, result)
 			}
 		})
 	}

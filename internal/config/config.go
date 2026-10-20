@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -21,6 +23,7 @@ type Config struct {
 	FormTitle          string
 	EmailTemplate      string
 	StatusTemplate     string
+	StatusRedirectURL  string
 	TestFormTemplate   string
 	EnableTestForm     bool
 	RecaptchaEnabled   bool
@@ -45,6 +48,7 @@ func Load() *Config {
 		FormTitle:          getEnv("FORM_TITLE", "Contact Me"),
 		EmailTemplate:      getEnv("EMAIL_TEMPLATE", "./web/templates/email_template.html"),
 		StatusTemplate:     getEnv("STATUS_TEMPLATE", "./web/templates/status_template.html"),
+		StatusRedirectURL:  getEnv("STATUS_REDIRECT_URL", ""),
 		TestFormTemplate:   getEnv("TEST_FORM_TEMPLATE", "./web/templates/test_form_template.html"),
 		EnableTestForm:     getEnvAsBool("ENABLE_TEST_FORM", false),
 		RecaptchaSiteKey:   getEnv("RECAPTCHA_SITE_KEY", ""),
@@ -66,6 +70,19 @@ func Load() *Config {
 	}
 
 	return config
+}
+
+// ValidateStatusRedirectURL rejects URL schemes that could execute script in a browser.
+func ValidateStatusRedirectURL(raw string) error {
+	if raw == "" {
+		return nil
+	}
+
+	u, err := url.Parse(raw)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" || u.User != nil {
+		return fmt.Errorf("STATUS_REDIRECT_URL must be an absolute http(s) URL without user info")
+	}
+	return nil
 }
 
 func getEnv(key, defaultValue string) string {
