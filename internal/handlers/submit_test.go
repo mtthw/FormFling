@@ -60,7 +60,7 @@ func TestSubmitHandler_RejectsOversizedBodies(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			email := &mockEmailService{}
-			handler := NewSubmitHandler(&config.Config{}, email, nil)
+			handler := NewSubmitHandler(email)
 			req := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(tt.body))
 			req.Header.Set("Content-Type", tt.contentType)
 			if tt.unknownLength {
@@ -97,7 +97,7 @@ func TestSubmitHandler_MultipartBodyLimit(t *testing.T) {
 			writer.Close()
 
 			email := &mockEmailService{}
-			handler := NewSubmitHandler(&config.Config{}, email, nil)
+			handler := NewSubmitHandler(email)
 			req := httptest.NewRequest(http.MethodPost, "/submit", &body)
 			req.ContentLength = -1
 			req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -120,18 +120,8 @@ func TestSubmitHandler_MultipartBodyLimit(t *testing.T) {
 var _ services.EmailSender = (*mockEmailService)(nil)
 
 func TestSubmitHandler_RedirectMode(t *testing.T) {
-	cfg := &config.Config{
-		SMTPHost:     "smtp.gmail.com",
-		SMTPPort:     587,
-		SMTPUsername: "test@example.com",
-		SMTPPassword: "password",
-		FromEmail:    "test@example.com",
-		ToEmail:      "recipient@example.com",
-		FormTitle:    "Test Form",
-	}
-
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(cfg, emailService, nil)
+	handler := NewSubmitHandler(emailService)
 
 	// Test form submission without AJAX headers (should redirect)
 	formData := url.Values{
@@ -163,18 +153,8 @@ func TestSubmitHandler_RedirectMode(t *testing.T) {
 }
 
 func TestSubmitHandler_AjaxMode(t *testing.T) {
-	cfg := &config.Config{
-		SMTPHost:     "smtp.gmail.com",
-		SMTPPort:     587,
-		SMTPUsername: "test@example.com",
-		SMTPPassword: "password",
-		FromEmail:    "test@example.com",
-		ToEmail:      "recipient@example.com",
-		FormTitle:    "Test Form",
-	}
-
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(cfg, emailService, nil)
+	handler := NewSubmitHandler(emailService)
 
 	formData := url.Values{
 		"name":    {"John Doe"},
@@ -211,18 +191,8 @@ func TestSubmitHandler_AjaxMode(t *testing.T) {
 }
 
 func TestSubmitHandler_JSONRequest_Success(t *testing.T) {
-	cfg := &config.Config{
-		SMTPHost:     "smtp.gmail.com",
-		SMTPPort:     587,
-		SMTPUsername: "test@example.com",
-		SMTPPassword: "password",
-		FromEmail:    "test@example.com",
-		ToEmail:      "recipient@example.com",
-		FormTitle:    "Test Form",
-	}
-
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(cfg, emailService, nil)
+	handler := NewSubmitHandler(emailService)
 
 	// Create JSON request body
 	formData := models.FormData{
@@ -268,18 +238,8 @@ func TestSubmitHandler_JSONRequest_Success(t *testing.T) {
 }
 
 func TestSubmitHandler_JSONRequest_ValidationError(t *testing.T) {
-	cfg := &config.Config{
-		SMTPHost:     "smtp.gmail.com",
-		SMTPPort:     587,
-		SMTPUsername: "test@example.com",
-		SMTPPassword: "password",
-		FromEmail:    "test@example.com",
-		ToEmail:      "recipient@example.com",
-		FormTitle:    "Test Form",
-	}
-
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(cfg, emailService, nil)
+	handler := NewSubmitHandler(emailService)
 
 	// Create JSON request body with invalid data
 	formData := models.FormData{
@@ -319,12 +279,8 @@ func TestSubmitHandler_JSONRequest_ValidationError(t *testing.T) {
 }
 
 func TestSubmitHandler_JSONRequest_ParseError(t *testing.T) {
-	cfg := &config.Config{
-		FormTitle: "Test Form",
-	}
-
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(cfg, emailService, nil)
+	handler := NewSubmitHandler(emailService)
 
 	// Create invalid JSON
 	invalidJSON := `{"name": "John", "email": }`
@@ -359,18 +315,8 @@ func TestSubmitHandler_JSONRequest_ParseError(t *testing.T) {
 }
 
 func TestSubmitHandler_IgnoresCustomRedirect(t *testing.T) {
-	cfg := &config.Config{
-		SMTPHost:     "smtp.gmail.com",
-		SMTPPort:     587,
-		SMTPUsername: "test@example.com",
-		SMTPPassword: "password",
-		FromEmail:    "test@example.com",
-		ToEmail:      "recipient@example.com",
-		FormTitle:    "Test Form",
-	}
-
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(cfg, emailService, nil)
+	handler := NewSubmitHandler(emailService)
 
 	// Test with custom redirect URL
 	formData := url.Values{
@@ -397,18 +343,8 @@ func TestSubmitHandler_IgnoresCustomRedirect(t *testing.T) {
 }
 
 func TestSubmitHandler_ValidationError(t *testing.T) {
-	cfg := &config.Config{
-		SMTPHost:     "smtp.gmail.com",
-		SMTPPort:     587,
-		SMTPUsername: "test@example.com",
-		SMTPPassword: "password",
-		FromEmail:    "test@example.com",
-		ToEmail:      "recipient@example.com",
-		FormTitle:    "Test Form",
-	}
-
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(cfg, emailService, nil)
+	handler := NewSubmitHandler(emailService)
 
 	// Test with invalid data (missing required fields)
 	formData := url.Values{
@@ -439,18 +375,8 @@ func TestSubmitHandler_ValidationError(t *testing.T) {
 }
 
 func TestSubmitHandler_AjaxValidationError(t *testing.T) {
-	cfg := &config.Config{
-		SMTPHost:     "smtp.gmail.com",
-		SMTPPort:     587,
-		SMTPUsername: "test@example.com",
-		SMTPPassword: "password",
-		FromEmail:    "test@example.com",
-		ToEmail:      "recipient@example.com",
-		FormTitle:    "Test Form",
-	}
-
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(cfg, emailService, nil)
+	handler := NewSubmitHandler(emailService)
 
 	// Test AJAX request with invalid data
 	formData := url.Values{
@@ -486,11 +412,8 @@ func TestSubmitHandler_AjaxValidationError(t *testing.T) {
 }
 
 func TestSubmitHandler_MethodNotAllowed(t *testing.T) {
-	cfg := &config.Config{
-		FormTitle: "Test Form",
-	}
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(cfg, emailService, nil)
+	handler := NewSubmitHandler(emailService)
 
 	// Test GET request (should fail)
 	req, err := http.NewRequest("GET", "/submit", nil)
@@ -514,19 +437,9 @@ func TestSubmitHandler_MethodNotAllowed(t *testing.T) {
 }
 
 func TestSubmitHandler_EmailServiceError(t *testing.T) {
-	cfg := &config.Config{
-		SMTPHost:     "smtp.gmail.com",
-		SMTPPort:     587,
-		SMTPUsername: "test@example.com",
-		SMTPPassword: "password",
-		FromEmail:    "test@example.com",
-		ToEmail:      "recipient@example.com",
-		FormTitle:    "Test Form",
-	}
-
 	// Mock email service that fails
 	emailService := &mockEmailService{shouldFail: true}
-	handler := NewSubmitHandler(cfg, emailService, nil)
+	handler := NewSubmitHandler(emailService)
 
 	formData := url.Values{
 		"name":    {"John Doe"},
@@ -565,9 +478,8 @@ func TestSubmitHandler_EmailServiceError(t *testing.T) {
 }
 
 func TestIsAjaxRequest(t *testing.T) {
-	cfg := &config.Config{}
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(cfg, emailService, nil)
+	handler := NewSubmitHandler(emailService)
 
 	tests := []struct {
 		name     string
@@ -639,11 +551,8 @@ func TestIsAjaxRequest(t *testing.T) {
 }
 
 func TestSubmitHandler_ParseFormError(t *testing.T) {
-	cfg := &config.Config{
-		FormTitle: "Test Form",
-	}
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(cfg, emailService, nil)
+	handler := NewSubmitHandler(emailService)
 
 	// Create a request with malformed form data
 	req, err := http.NewRequest("POST", "/submit", strings.NewReader("%"))

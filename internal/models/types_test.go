@@ -8,13 +8,12 @@ import (
 func TestFormData_JSON(t *testing.T) {
 	t.Run("Marshal FormData", func(t *testing.T) {
 		form := FormData{
-			Name:              "John Doe",
-			Email:             "john@example.com",
-			Subject:           "Test Subject",
-			Message:           "This is a test message",
-			Phone:             "123-456-7890",
-			Website:           "https://example.com",
-			RecaptchaResponse: "1234567890abcdefghijklmnopqrstuvwxyz",
+			Name:    "John Doe",
+			Email:   "john@example.com",
+			Subject: "Test Subject",
+			Message: "This is a test message",
+			Phone:   "123-456-7890",
+			Website: "https://example.com",
 		}
 
 		data, err := json.Marshal(form)
@@ -22,7 +21,7 @@ func TestFormData_JSON(t *testing.T) {
 			t.Errorf("Failed to marshal FormData: %v", err)
 		}
 
-		expected := `{"name":"John Doe","email":"john@example.com","subject":"Test Subject","message":"This is a test message","phone":"123-456-7890","website":"https://example.com","g-recaptcha-response":"1234567890abcdefghijklmnopqrstuvwxyz"}`
+		expected := `{"name":"John Doe","email":"john@example.com","subject":"Test Subject","message":"This is a test message","phone":"123-456-7890","website":"https://example.com"}`
 		if string(data) != expected {
 			t.Errorf("Marshaled JSON doesn't match expected.\nGot: %s\nExpected: %s", string(data), expected)
 		}

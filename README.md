@@ -15,7 +15,6 @@ Haven't you always wanted a contact form on your website, but to keep your email
 - Origin-based security
 - Configured status page return URL
 - Health check endpoint
-- reCAPTCHA v3 bot protection
 - Docker ready
 
 ## Quick Start
@@ -61,11 +60,6 @@ Configure via environment variables:
 - `ALLOWED_ORIGINS` - Comma-separated allowed domains (default: all)
 - `FORM_TITLE` - Form name in emails (default: Contact Me)
 - `STATUS_REDIRECT_URL` - Optional absolute HTTP(S) URL for the status page's return link and automatic redirect
-- `RECAPTCHA_SITE_KEY` - reCAPTCHA v3 site key
-- `RECAPTCHA_SECRET_KEY` - reCAPTCHA v3 secret key
-- `RECAPTCHA_MIN_SCORE` - Minimum score threshold (default: 0.5)
-- `RECAPTCHA_ACTION` - Expected action name (default: submit)
-- `ENABLE_TEST_FORM` - Enable `/test_form` endpoint (default: false)
 
 See [.env.example](.env.example) for all options.
 
@@ -83,78 +77,30 @@ Add this form to your website:
 <form action="https://your-formfling-domain.com/submit" method="POST">
   <input type="text" name="name" required>
   <input type="email" name="email" required>
-  <textarea name="message" required></textarea>
+  <textarea name="message" minlength="300" required></textarea>
   <button type="submit">Send</button>
 </form>
 ```
 
-### With reCAPTCHA v3
-
-```html
-<script src="https://www.google.com/recaptcha/api.js"></script>
-<form id="contact-form">
-  <input type="text" name="name" required>
-  <input type="email" name="email" required>
-  <textarea name="message" required></textarea>
-  <button type="submit"
-          class="g-recaptcha" 
-          data-sitekey="reCAPTCHA_site_key" 
-          data-callback='onSubmit' 
-          data-action='submit'>
-    Send
-  </button>
-</form>
-
- <script>
-   function onSubmit(token) {
-     document.getElementById("contact-form").submit();
-   }
- </script>
-```
-
 ### JavaScript/AJAX
 
-```javascript
-fetch('https://your-formfling-domain.com/submit', {
-  method: 'POST',
-  body: new FormData(form)
-})
-.then(response => response.json())
-.then(data => {
-  if (data.status === 'message sent') {
-    // Success
-  }
-});
-```
-
-### AJAX with reCAPTCHA v3
+To enhance the form above, intercept its submission and ask for JSON. Without JavaScript, it still submits normally and shows the status page.
 
 ```javascript
-document.getElementById('contact-form').addEventListener('submit', function(e) {
-  e.preventDefault();
-  
-  grecaptcha.ready(() => {
-    grecaptcha.execute('YOUR_SITE_KEY', {action: 'submit'}).then(token => {
-      fetch('https://your-formfling-domain.com/submit', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          name: form.name.value,
-          email: form.email.value,
-          message: form.message.value,
-          'g-recaptcha-response': token
-        })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.status === 'message sent') {
-          // Success
-        } else {
-          // Handle error: data.error
-        }
-      });
+const form = document.querySelector('form');
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  try {
+    const response = await fetch(form.action, {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      body: new FormData(form)
     });
-  });
+    const data = await response.json();
+    // Show data.status or data.error in your page.
+  } catch (error) {
+    // Show a network error in your page.
+  }
 });
 ```
 
@@ -163,7 +109,6 @@ document.getElementById('contact-form').addEventListener('submit', function(e) {
 - `POST /submit` - Submit form
 - `GET /health` - Health check
 - `GET /status` - Status page
-- `GET /test_form` - reCAPTCHA token generator (when `ENABLE_TEST_FORM=true`)
 
 Browser form submissions return to `/status?type=success` or `/status?type=error`. Set `STATUS_REDIRECT_URL` in Docker to show a return link and redirect visitors there after five seconds. The return destination ignores request supplied `redirect`, `Referer`, and `_redirect` values.
 
@@ -171,28 +116,6 @@ Browser form submissions return to `/status?type=success` or `/status?type=error
 ```json
 {"status": "message sent"}
 {"status": "error", "error": "description"}
-```
-
-## Testing reCAPTCHA
-
-Set `ENABLE_TEST_FORM=true` and visit `/test_form` to generate reCAPTCHA tokens for testing:
-
-```bash
-# Set environment variables
-export RECAPTCHA_SITE_KEY=your-site-key
-export RECAPTCHA_SECRET_KEY=your-secret-key  
-export ENABLE_TEST_FORM=true
-
-# Visit http://localhost:8080/test_form in browser
-# Copy the generated curl command and run it:
-curl -X POST http://localhost:8080/submit \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Test User",
-    "email": "test@example.com",
-    "message": "Test message",
-    "g-recaptcha-response": "generated-token-here"
-  }'
 ```
 
 ## Custom Templates
