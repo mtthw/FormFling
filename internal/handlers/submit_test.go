@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -18,13 +19,101 @@ import (
 // Mock email service for testing
 type mockEmailService struct {
 	shouldFail bool
+	calls      int
 }
 
 func (m *mockEmailService) SendEmail(formData models.FormData, origin string) error {
+	m.calls++
 	if m.shouldFail {
 		return errors.New("mock email service error")
 	}
 	return nil
+}
+
+func TestSubmitHandler_RejectsOversizedBodies(t *testing.T) {
+	tests := []struct {
+		name          string
+		contentType   string
+		body          string
+		unknownLength bool
+		acceptJSON    bool
+	}{
+		{
+			name:          "JSON without known length",
+			contentType:   "application/json",
+			body:          strings.Repeat("x", int(config.MaxRequestBodyBytes)+1),
+			unknownLength: true,
+			acceptJSON:    true,
+		},
+		{
+			name:        "URL encoded with known length",
+			contentType: "application/x-www-form-urlencoded",
+			body:        "message=" + strings.Repeat("x", int(config.MaxRequestBodyBytes)),
+		},
+		{
+			name:          "URL encoded without known length",
+			contentType:   "application/x-www-form-urlencoded",
+			body:          "message=" + strings.Repeat("x", int(config.MaxRequestBodyBytes)),
+			unknownLength: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			email := &mockEmailService{}
+			handler := NewSubmitHandler(&config.Config{}, email, nil)
+			req := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(tt.body))
+			req.Header.Set("Content-Type", tt.contentType)
+			if tt.unknownLength {
+				req.ContentLength = -1
+			}
+			if tt.acceptJSON {
+				req.Header.Set("Accept", "application/json")
+			}
+			recorder := httptest.NewRecorder()
+
+			handler.Handle(recorder, req)
+			if recorder.Code != http.StatusRequestEntityTooLarge {
+				t.Errorf("expected 413, got %d", recorder.Code)
+			}
+			if email.calls != 0 {
+				t.Error("oversized request reached the email service")
+			}
+		})
+	}
+}
+
+func TestSubmitHandler_MultipartBodyLimit(t *testing.T) {
+	for _, oversized := range []bool{false, true} {
+		t.Run(map[bool]string{false: "accepted", true: "rejected"}[oversized], func(t *testing.T) {
+			var body bytes.Buffer
+			writer := multipart.NewWriter(&body)
+			writer.WriteField("name", "Alice")
+			writer.WriteField("email", "alice@example.com")
+			message := strings.Repeat("valid message ", 30)
+			if oversized {
+				message = strings.Repeat("x", int(config.MaxRequestBodyBytes))
+			}
+			writer.WriteField("message", message)
+			writer.Close()
+
+			email := &mockEmailService{}
+			handler := NewSubmitHandler(&config.Config{}, email, nil)
+			req := httptest.NewRequest(http.MethodPost, "/submit", &body)
+			req.ContentLength = -1
+			req.Header.Set("Content-Type", writer.FormDataContentType())
+			req.Header.Set("Accept", "application/json")
+			recorder := httptest.NewRecorder()
+
+			handler.Handle(recorder, req)
+			if oversized {
+				if recorder.Code != http.StatusRequestEntityTooLarge || email.calls != 0 {
+					t.Errorf("expected 413 without email, got status %d and %d email calls", recorder.Code, email.calls)
+				}
+			} else if recorder.Code != http.StatusOK || email.calls != 1 {
+				t.Errorf("expected successful email, got status %d and %d email calls", recorder.Code, email.calls)
+			}
+		})
+	}
 }
 
 // Ensure mockEmailService implements EmailSender
@@ -496,6 +585,13 @@ func TestIsAjaxRequest(t *testing.T) {
 			name: "JSON content type",
 			headers: map[string]string{
 				"Content-Type": "application/json",
+			},
+			expected: true,
+		},
+		{
+			name: "JSON content type with charset",
+			headers: map[string]string{
+				"Content-Type": "application/json; charset=utf-8",
 			},
 			expected: true,
 		},

@@ -63,7 +63,15 @@ func main() {
 	log.Printf("FormFling server starting on port %s", cfg.Port)
 	log.Printf("Allowed origins: %v", cfg.AllowedOrigins)
 
-	if err := http.ListenAndServe(":"+cfg.Port, r); err != nil {
+	server := &http.Server{
+		Addr:              ":" + cfg.Port,
+		Handler:           r,
+		ReadHeaderTimeout: config.HTTPReadHeaderTimeout,
+		ReadTimeout:       config.HTTPReadTimeout,
+		WriteTimeout:      config.HTTPWriteTimeout,
+		IdleTimeout:       config.HTTPIdleTimeout,
+	}
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatal("Server failed to start:", err)
 	}
 }

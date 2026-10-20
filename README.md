@@ -247,6 +247,9 @@ go run .
 - Set `ALLOWED_ORIGINS` to restrict access
 - Use Gmail App Passwords
 - Consider rate limiting at proxy level
+- JSON and form submissions are limited to 1 MiB; larger requests receive HTTP 413
+- HTTP timeouts: 5 seconds for headers, 15 seconds to read, 60 seconds to write, and 60 seconds idle
+- SMTP connections have a 5-second dial timeout and a 20-second deadline for the full send
 
 ## License
 

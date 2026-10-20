@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"net"
 	"net/smtp"
 	"time"
 
@@ -75,25 +76,43 @@ func (s *EmailService) SendEmail(formData models.FormData, origin string) error 
 
 	// Connect to server and send email
 	addr := fmt.Sprintf("%s:%d", s.config.SMTPHost, s.config.SMTPPort)
+	deadline := time.Now().Add(config.SMTPTimeout)
 
 	// Handle different SMTP configurations
 	if s.config.SMTPPort == 465 {
 		// SSL/TLS connection for port 465
-		return s.sendEmailSSL(addr, auth, msg)
+		return s.sendEmailSSL(addr, auth, msg, deadline)
 	} else {
 		// STARTTLS connection for port 587 (and others)
-		return s.sendEmailSTARTTLS(addr, auth, msg)
+		return s.sendEmailSTARTTLS(addr, auth, msg, deadline)
 	}
 }
 
-func (s *EmailService) sendEmailSSL(addr string, auth smtp.Auth, msg string) error {
-	conn, err := tls.Dial("tcp", addr, &tls.Config{
-		ServerName: s.config.SMTPHost,
-	})
+func dialSMTP(addr string, deadline time.Time) (net.Conn, error) {
+	dialer := net.Dialer{Timeout: config.SMTPConnectTimeout, Deadline: deadline}
+	conn, err := dialer.Dial("tcp", addr)
+	if err != nil {
+		return nil, err
+	}
+	if err := conn.SetDeadline(deadline); err != nil {
+		conn.Close()
+		return nil, err
+	}
+	return conn, nil
+}
+
+func (s *EmailService) sendEmailSSL(addr string, auth smtp.Auth, msg string, deadline time.Time) error {
+	rawConn, err := dialSMTP(addr, deadline)
 	if err != nil {
 		return fmt.Errorf("failed to connect to SMTP server: %v", err)
 	}
+	conn := tls.Client(rawConn, &tls.Config{
+		ServerName: s.config.SMTPHost,
+	})
 	defer conn.Close()
+	if err := conn.Handshake(); err != nil {
+		return fmt.Errorf("failed to establish SMTP TLS connection: %v", err)
+	}
 
 	client, err := smtp.NewClient(conn, s.config.SMTPHost)
 	if err != nil {
@@ -110,10 +129,15 @@ func (s *EmailService) sendEmailSSL(addr string, auth smtp.Auth, msg string) err
 	return s.sendEmailData(client, msg)
 }
 
-func (s *EmailService) sendEmailSTARTTLS(addr string, auth smtp.Auth, msg string) error {
-	conn, err := smtp.Dial(addr)
+func (s *EmailService) sendEmailSTARTTLS(addr string, auth smtp.Auth, msg string, deadline time.Time) error {
+	rawConn, err := dialSMTP(addr, deadline)
 	if err != nil {
 		return fmt.Errorf("failed to connect to SMTP server: %v", err)
+	}
+	defer rawConn.Close()
+	conn, err := smtp.NewClient(rawConn, s.config.SMTPHost)
+	if err != nil {
+		return fmt.Errorf("failed to create SMTP client: %v", err)
 	}
 	defer conn.Quit()
 

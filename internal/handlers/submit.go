@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -34,6 +35,12 @@ func (h *SubmitHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		h.handleError(w, r, "must be a post", http.StatusMethodNotAllowed)
 		return
 	}
+	if r.ContentLength > config.MaxRequestBodyBytes {
+		h.handleBodyTooLarge(w, r)
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, config.MaxRequestBodyBytes)
+	defer r.Body.Close()
 
 	var formData models.FormData
 	var err error
@@ -44,12 +51,28 @@ func (h *SubmitHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		// Parse JSON request body
 		formData, err = h.parseJSONRequest(r)
 		if err != nil {
+			if isBodyTooLarge(err) {
+				h.handleBodyTooLarge(w, r)
+				return
+			}
 			h.handleError(w, r, "failed to parse JSON", http.StatusBadRequest)
 			return
 		}
 	} else {
 		// Parse form data (default)
-		if err := r.ParseForm(); err != nil {
+		if strings.HasPrefix(contentType, "multipart/form-data") {
+			err = r.ParseMultipartForm(config.MaxRequestBodyBytes)
+			if r.MultipartForm != nil {
+				defer r.MultipartForm.RemoveAll()
+			}
+		} else {
+			err = r.ParseForm()
+		}
+		if err != nil {
+			if isBodyTooLarge(err) {
+				h.handleBodyTooLarge(w, r)
+				return
+			}
 			h.handleError(w, r, "failed to parse form", http.StatusBadRequest)
 			return
 		}
@@ -102,13 +125,12 @@ func (h *SubmitHandler) parseJSONRequest(r *http.Request) (models.FormData, erro
 	// Read the request body
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		return formData, fmt.Errorf("failed to read request body: %v", err)
+		return formData, fmt.Errorf("failed to read request body: %w", err)
 	}
-	defer r.Body.Close()
 
 	// Parse JSON
 	if err := json.Unmarshal(body, &formData); err != nil {
-		return formData, fmt.Errorf("failed to unmarshal JSON: %v", err)
+		return formData, fmt.Errorf("failed to unmarshal JSON: %w", err)
 	}
 
 	// Clean the data (but not the reCAPTCHA token)
@@ -120,6 +142,19 @@ func (h *SubmitHandler) parseJSONRequest(r *http.Request) (models.FormData, erro
 	formData.Website = utils.CleanString(formData.Website)
 
 	return formData, nil
+}
+
+func isBodyTooLarge(err error) bool {
+	var maxBytesError *http.MaxBytesError
+	return errors.As(err, &maxBytesError)
+}
+
+func (h *SubmitHandler) handleBodyTooLarge(w http.ResponseWriter, r *http.Request) {
+	if h.isAjaxRequest(r) {
+		h.handleError(w, r, "request body too large", http.StatusRequestEntityTooLarge)
+		return
+	}
+	http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
 }
 
 func (h *SubmitHandler) getClientIP(r *http.Request) string {
@@ -174,6 +209,6 @@ func (h *SubmitHandler) handleError(w http.ResponseWriter, r *http.Request, erro
 func (h *SubmitHandler) isAjaxRequest(r *http.Request) bool {
 	// Check for common AJAX indicators
 	return r.Header.Get("X-Requested-With") == "XMLHttpRequest" ||
-		r.Header.Get("Content-Type") == "application/json" ||
+		strings.Contains(r.Header.Get("Content-Type"), "application/json") ||
 		strings.Contains(r.Header.Get("Accept"), "application/json")
 }
