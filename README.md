@@ -4,8 +4,11 @@
 
 Haven't you always wanted a contact form on your website, but to keep your email private and not spend a ton of money on a paid service? FormFling is a self-hosted contact form service that forwards submissions to your email via SMTP. Think Formspree, but running on your own server.
 
-[![Tests](https://github.com/fireph/formfling/workflows/Run%20Tests/badge.svg)](https://github.com/fireph/formfling/actions/workflows/test.yml)
-[![Coverage](https://github.com/fireph/FormFling/wiki/coverage.svg)](https://github.com/fireph/FormFling/wiki/Test-coverage-report)
+[![Tests](https://github.com/mtthw/FormFling/actions/workflows/test.yml/badge.svg)](https://github.com/mtthw/FormFling/actions/workflows/test.yml)
+
+## About this fork
+
+This is a fork of [FormFling/FormFling](https://github.com/FormFling/FormFling), tailored for a small contact form hosted on your own server. The website provides the form and its success or error messages; FormFling accepts submissions and sends the email. This fork removes the built-in pages and reCAPTCHA, sends plain text messages with the visitor's address in `Reply-To`, redirects browser submissions back to the website, and adds a honeypot and rate limits per IP address. Releases here are maintained separately from upstream.
 
 ## Features
 
