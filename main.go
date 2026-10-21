@@ -26,12 +26,20 @@ func main() {
 	if err := config.ValidateStatusRedirectURL(cfg.StatusRedirectURL); err != nil {
 		log.Fatal(err)
 	}
+	trustedProxies, err := config.ParseTrustedProxyCIDRs(cfg.TrustedProxyCIDRs)
+	if err != nil {
+		log.Fatal(err)
+	}
+	rateLimit, err := config.ParseRateLimitSettings(cfg.RateLimitMaxEmails, cfg.RateLimitWindow)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Initialize services
 	emailService := services.NewEmailService(cfg)
 
 	// Setup handlers
-	submitHandler := handlers.NewSubmitHandler(emailService)
+	submitHandler := handlers.NewSubmitHandler(emailService, rateLimit, trustedProxies...)
 	healthHandler := handlers.NewHealthHandler()
 	statusHandler := handlers.NewStatusHandler(cfg)
 

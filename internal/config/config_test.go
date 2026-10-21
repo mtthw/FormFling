@@ -13,6 +13,8 @@ func TestLoad(t *testing.T) {
 	originalEmailTemplate := os.Getenv("EMAIL_TEMPLATE")
 	originalStatusTemplate := os.Getenv("STATUS_TEMPLATE")
 	originalStatusRedirect := os.Getenv("STATUS_REDIRECT_URL")
+	originalRateLimitMax := os.Getenv("RATE_LIMIT_MAX_EMAILS")
+	originalRateLimitWindow := os.Getenv("RATE_LIMIT_WINDOW")
 
 	// Clean up after test
 	defer func() {
@@ -22,6 +24,8 @@ func TestLoad(t *testing.T) {
 		os.Setenv("EMAIL_TEMPLATE", originalEmailTemplate)
 		os.Setenv("STATUS_TEMPLATE", originalStatusTemplate)
 		os.Setenv("STATUS_REDIRECT_URL", originalStatusRedirect)
+		os.Setenv("RATE_LIMIT_MAX_EMAILS", originalRateLimitMax)
+		os.Setenv("RATE_LIMIT_WINDOW", originalRateLimitWindow)
 	}()
 
 	// Test default values
@@ -31,6 +35,8 @@ func TestLoad(t *testing.T) {
 	os.Unsetenv("EMAIL_TEMPLATE")
 	os.Unsetenv("STATUS_TEMPLATE")
 	os.Unsetenv("STATUS_REDIRECT_URL")
+	os.Unsetenv("RATE_LIMIT_MAX_EMAILS")
+	os.Unsetenv("RATE_LIMIT_WINDOW")
 
 	cfg := Load()
 
@@ -56,6 +62,9 @@ func TestLoad(t *testing.T) {
 	if cfg.StatusRedirectURL != "" {
 		t.Errorf("Expected no default status redirect, got %s", cfg.StatusRedirectURL)
 	}
+	if cfg.RateLimitMaxEmails != "3" || cfg.RateLimitWindow != "24h" {
+		t.Errorf("Expected default rate limit 3 per 24h, got %s per %s", cfg.RateLimitMaxEmails, cfg.RateLimitWindow)
+	}
 
 	// Test custom values
 	os.Setenv("PORT", "3000")
@@ -64,6 +73,8 @@ func TestLoad(t *testing.T) {
 	os.Setenv("EMAIL_TEMPLATE", "/custom/email_template.html")
 	os.Setenv("STATUS_TEMPLATE", "/custom/status_template.html")
 	os.Setenv("STATUS_REDIRECT_URL", "https://example.com/contact")
+	os.Setenv("RATE_LIMIT_MAX_EMAILS", "5")
+	os.Setenv("RATE_LIMIT_WINDOW", "12h")
 
 	cfg = Load()
 
@@ -92,6 +103,9 @@ func TestLoad(t *testing.T) {
 	}
 	if cfg.StatusRedirectURL != "https://example.com/contact" {
 		t.Errorf("Expected configured status redirect, got %s", cfg.StatusRedirectURL)
+	}
+	if cfg.RateLimitMaxEmails != "5" || cfg.RateLimitWindow != "12h" {
+		t.Errorf("Expected configured rate limit 5 per 12h, got %s per %s", cfg.RateLimitMaxEmails, cfg.RateLimitWindow)
 	}
 }
 

@@ -60,6 +60,9 @@ Configure via environment variables:
 - `ALLOWED_ORIGINS` - Comma-separated allowed domains (default: all)
 - `FORM_TITLE` - Form name in emails (default: Contact Me)
 - `STATUS_REDIRECT_URL` - Optional absolute HTTP(S) URL for the status page's return link and automatic redirect
+- `TRUSTED_PROXY_CIDRS` - Optional comma-separated CIDRs for reverse proxies that set `X-Forwarded-For`; default: none
+- `RATE_LIMIT_MAX_EMAILS` - Maximum successful emails per visitor IP in each rolling window (default: 3)
+- `RATE_LIMIT_WINDOW` - Rolling window as a Go duration, such as `1h`, `24h`, or `48h` (default: `24h`)
 
 See [.env.example](.env.example) for all options.
 
@@ -111,6 +114,8 @@ form.addEventListener('submit', async (event) => {
 - `GET /status` - Status page
 
 Browser form submissions return to `/status?type=success` or `/status?type=error`. Set `STATUS_REDIRECT_URL` in Docker to show a return link and redirect visitors there after five seconds. The return destination ignores request supplied `redirect`, `Referer`, and `_redirect` values.
+
+Each visitor IP can send up to `RATE_LIMIT_MAX_EMAILS` successful emails in a rolling `RATE_LIMIT_WINDOW`. Further fetch requests receive HTTP 429 and `Retry-After`; regular forms show a message-limit status page. Failed sends do not count. The counter is held in memory, so it resets when the app restarts and is separate for each app instance. If FormFling runs behind a reverse proxy, set `TRUSTED_PROXY_CIDRS` to the proxy's IP range and ensure the proxy appends or replaces `X-Forwarded-For`. Invalid or nonpositive rate-limit settings prevent startup.
 
 **Response format:**
 ```json
@@ -169,7 +174,7 @@ go run .
 - Use HTTPS in production
 - Set `ALLOWED_ORIGINS` to restrict access
 - Use Gmail App Passwords
-- Consider rate limiting at proxy level
+- For multiple app instances or limits that survive restarts, also enforce rate limiting at the proxy or with shared storage
 - JSON and form submissions are limited to 1 MiB; larger requests receive HTTP 413
 - HTTP timeouts: 5 seconds for headers, 15 seconds to read, 60 seconds to write, and 60 seconds idle
 - SMTP connections have a 5-second dial timeout and a 20-second deadline for the full send

@@ -29,6 +29,8 @@ services:
       # Optional customization
       - FORM_TITLE=Contact Me
       - STATUS_REDIRECT_URL=https://www.mydomain1.com/contact
+      # - RATE_LIMIT_MAX_EMAILS=3
+      # - RATE_LIMIT_WINDOW=24h
       # - EMAIL_TEMPLATE=/templates/custom_template.html
       - EMAIL_TEMPLATE=./web/templates/email_template.html
       - PORT=8080

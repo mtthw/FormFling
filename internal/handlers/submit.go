@@ -7,7 +7,10 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/netip"
+	"strconv"
 	"strings"
+	"time"
 
 	"formfling/internal/config"
 	"formfling/internal/models"
@@ -16,12 +19,16 @@ import (
 )
 
 type SubmitHandler struct {
-	emailService services.EmailSender
+	emailService   services.EmailSender
+	rateLimiter    *emailRateLimiter
+	trustedProxies []netip.Prefix
 }
 
-func NewSubmitHandler(emailService services.EmailSender) *SubmitHandler {
+func NewSubmitHandler(emailService services.EmailSender, rateLimit config.RateLimitSettings, trustedProxies ...netip.Prefix) *SubmitHandler {
 	return &SubmitHandler{
-		emailService: emailService,
+		emailService:   emailService,
+		rateLimiter:    newEmailRateLimiter(rateLimit),
+		trustedProxies: trustedProxies,
 	}
 }
 
@@ -86,6 +93,12 @@ func (h *SubmitHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		h.handleError(w, r, "server rejected", http.StatusBadRequest)
 		return
 	}
+	complete, retryAfter := h.rateLimiter.reserve(clientIP(r, h.trustedProxies))
+	if complete == nil {
+		h.handleRateLimit(w, r, retryAfter)
+		return
+	}
+	defer complete(false)
 
 	// Get origin for email
 	origin := r.Header.Get("Origin")
@@ -99,8 +112,19 @@ func (h *SubmitHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		h.handleError(w, r, "failed to send email", http.StatusInternalServerError)
 		return
 	}
+	complete(true)
 
 	h.handleSuccess(w, r)
+}
+
+func (h *SubmitHandler) handleRateLimit(w http.ResponseWriter, r *http.Request, retryAfter time.Duration) {
+	if h.isAjaxRequest(r) {
+		seconds := int64((retryAfter + time.Second - 1) / time.Second)
+		w.Header().Set("Retry-After", strconv.FormatInt(seconds, 10))
+		h.handleError(w, r, "email rate limit exceeded; try again later", http.StatusTooManyRequests)
+		return
+	}
+	http.Redirect(w, r, "/status?type=rate_limited", http.StatusSeeOther)
 }
 
 func (h *SubmitHandler) parseJSONRequest(r *http.Request) (models.FormData, error) {

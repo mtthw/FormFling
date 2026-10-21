@@ -148,6 +148,10 @@
             <p class="status-message">
                 Thank you for your message. We'll get back to you as soon as possible.
             </p>
+        {{else if eq .Status "rate_limited"}}
+            <div class="status-icon error">✗</div>
+            <h1 class="status-title">Message Limit Reached</h1>
+            <p class="status-message">{{.Message}}</p>
         {{else}}
             <div class="status-icon error">✗</div>
             <h1 class="status-title">Something Went Wrong</h1>

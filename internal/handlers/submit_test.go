@@ -10,11 +10,16 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"formfling/internal/config"
 	"formfling/internal/models"
 	"formfling/internal/services"
 )
+
+func newTestSubmitHandler(email services.EmailSender) *SubmitHandler {
+	return NewSubmitHandler(email, config.RateLimitSettings{MaxEmails: 3, Window: 24 * time.Hour})
+}
 
 // Mock email service for testing
 type mockEmailService struct {
@@ -60,7 +65,7 @@ func TestSubmitHandler_RejectsOversizedBodies(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			email := &mockEmailService{}
-			handler := NewSubmitHandler(email)
+			handler := newTestSubmitHandler(email)
 			req := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(tt.body))
 			req.Header.Set("Content-Type", tt.contentType)
 			if tt.unknownLength {
@@ -97,7 +102,7 @@ func TestSubmitHandler_MultipartBodyLimit(t *testing.T) {
 			writer.Close()
 
 			email := &mockEmailService{}
-			handler := NewSubmitHandler(email)
+			handler := newTestSubmitHandler(email)
 			req := httptest.NewRequest(http.MethodPost, "/submit", &body)
 			req.ContentLength = -1
 			req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -121,7 +126,7 @@ var _ services.EmailSender = (*mockEmailService)(nil)
 
 func TestSubmitHandler_RedirectMode(t *testing.T) {
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(emailService)
+	handler := newTestSubmitHandler(emailService)
 
 	// Test form submission without AJAX headers (should redirect)
 	formData := url.Values{
@@ -154,7 +159,7 @@ func TestSubmitHandler_RedirectMode(t *testing.T) {
 
 func TestSubmitHandler_AjaxMode(t *testing.T) {
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(emailService)
+	handler := newTestSubmitHandler(emailService)
 
 	formData := url.Values{
 		"name":    {"John Doe"},
@@ -192,7 +197,7 @@ func TestSubmitHandler_AjaxMode(t *testing.T) {
 
 func TestSubmitHandler_JSONRequest_Success(t *testing.T) {
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(emailService)
+	handler := newTestSubmitHandler(emailService)
 
 	// Create JSON request body
 	formData := models.FormData{
@@ -239,7 +244,7 @@ func TestSubmitHandler_JSONRequest_Success(t *testing.T) {
 
 func TestSubmitHandler_JSONRequest_ValidationError(t *testing.T) {
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(emailService)
+	handler := newTestSubmitHandler(emailService)
 
 	// Create JSON request body with invalid data
 	formData := models.FormData{
@@ -280,7 +285,7 @@ func TestSubmitHandler_JSONRequest_ValidationError(t *testing.T) {
 
 func TestSubmitHandler_JSONRequest_ParseError(t *testing.T) {
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(emailService)
+	handler := newTestSubmitHandler(emailService)
 
 	// Create invalid JSON
 	invalidJSON := `{"name": "John", "email": }`
@@ -316,7 +321,7 @@ func TestSubmitHandler_JSONRequest_ParseError(t *testing.T) {
 
 func TestSubmitHandler_IgnoresCustomRedirect(t *testing.T) {
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(emailService)
+	handler := newTestSubmitHandler(emailService)
 
 	// Test with custom redirect URL
 	formData := url.Values{
@@ -344,7 +349,7 @@ func TestSubmitHandler_IgnoresCustomRedirect(t *testing.T) {
 
 func TestSubmitHandler_ValidationError(t *testing.T) {
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(emailService)
+	handler := newTestSubmitHandler(emailService)
 
 	// Test with invalid data (missing required fields)
 	formData := url.Values{
@@ -376,7 +381,7 @@ func TestSubmitHandler_ValidationError(t *testing.T) {
 
 func TestSubmitHandler_AjaxValidationError(t *testing.T) {
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(emailService)
+	handler := newTestSubmitHandler(emailService)
 
 	// Test AJAX request with invalid data
 	formData := url.Values{
@@ -413,7 +418,7 @@ func TestSubmitHandler_AjaxValidationError(t *testing.T) {
 
 func TestSubmitHandler_MethodNotAllowed(t *testing.T) {
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(emailService)
+	handler := newTestSubmitHandler(emailService)
 
 	// Test GET request (should fail)
 	req, err := http.NewRequest("GET", "/submit", nil)
@@ -439,7 +444,7 @@ func TestSubmitHandler_MethodNotAllowed(t *testing.T) {
 func TestSubmitHandler_EmailServiceError(t *testing.T) {
 	// Mock email service that fails
 	emailService := &mockEmailService{shouldFail: true}
-	handler := NewSubmitHandler(emailService)
+	handler := newTestSubmitHandler(emailService)
 
 	formData := url.Values{
 		"name":    {"John Doe"},
@@ -479,7 +484,7 @@ func TestSubmitHandler_EmailServiceError(t *testing.T) {
 
 func TestIsAjaxRequest(t *testing.T) {
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(emailService)
+	handler := newTestSubmitHandler(emailService)
 
 	tests := []struct {
 		name     string
@@ -552,7 +557,7 @@ func TestIsAjaxRequest(t *testing.T) {
 
 func TestSubmitHandler_ParseFormError(t *testing.T) {
 	emailService := &mockEmailService{}
-	handler := NewSubmitHandler(emailService)
+	handler := newTestSubmitHandler(emailService)
 
 	// Create a request with malformed form data
 	req, err := http.NewRequest("POST", "/submit", strings.NewReader("%"))
@@ -573,5 +578,42 @@ func TestSubmitHandler_ParseFormError(t *testing.T) {
 	// Should redirect to status page since there's no referer
 	if !strings.Contains(location, "/status?type=error") {
 		t.Errorf("Expected redirect URL to contain /status?type=error, got %s", location)
+	}
+}
+
+func TestSubmitHandler_RateLimitsSuccessfulEmailsPerIP(t *testing.T) {
+	email := &mockEmailService{}
+	handler := newTestSubmitHandler(email)
+	form := url.Values{
+		"name":    {"John Doe"},
+		"email":   {"john@example.com"},
+		"message": {strings.Repeat("valid message ", 30)},
+	}
+	submit := func(ip string, jsonResponse bool) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(form.Encode()))
+		req.RemoteAddr = ip + ":1234"
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		if jsonResponse {
+			req.Header.Set("Accept", "application/json")
+		}
+		recorder := httptest.NewRecorder()
+		handler.Handle(recorder, req)
+		return recorder
+	}
+
+	for i := 0; i < 3; i++ {
+		if got := submit("198.51.100.1", true).Code; got != http.StatusOK {
+			t.Fatalf("submission %d got HTTP %d", i+1, got)
+		}
+	}
+	recorder := submit("198.51.100.1", true)
+	if recorder.Code != http.StatusTooManyRequests || recorder.Header().Get("Retry-After") == "" || email.calls != 3 {
+		t.Fatalf("fourth submission: HTTP %d, retry-after %q, email calls %d", recorder.Code, recorder.Header().Get("Retry-After"), email.calls)
+	}
+	if got := submit("198.51.100.1", false).Header().Get("Location"); got != "/status?type=rate_limited" {
+		t.Fatalf("browser submission redirected to %q", got)
+	}
+	if got := submit("198.51.100.2", true).Code; got != http.StatusOK || email.calls != 4 {
+		t.Fatalf("second visitor got HTTP %d with %d email calls", got, email.calls)
 	}
 }

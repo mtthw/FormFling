@@ -43,6 +43,8 @@ func (h *StatusHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	var message string
 	if status == "success" {
 		message = "Your message has been sent successfully!"
+	} else if status == "rate_limited" {
+		message = "You have reached the message limit. Please try again later."
 	} else {
 		message = "There was an error sending your message. Please try again."
 	}

@@ -44,3 +44,12 @@ func TestStatusHandler_WithoutConfiguredRedirect(t *testing.T) {
 		t.Error("status page rendered a return URL without configuration")
 	}
 }
+
+func TestStatusHandler_RateLimitedMessage(t *testing.T) {
+	handler := NewStatusHandler(&config.Config{StatusTemplate: "../../web/templates/status_template.html"})
+	recorder := httptest.NewRecorder()
+	handler.Handle(recorder, httptest.NewRequest(http.MethodGet, "/status?type=rate_limited", nil))
+	if recorder.Code != http.StatusOK || !strings.Contains(recorder.Body.String(), "Message Limit Reached") {
+		t.Fatalf("rate limit status page: HTTP %d, body %q", recorder.Code, recorder.Body.String())
+	}
+}
