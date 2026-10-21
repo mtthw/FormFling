@@ -1,6 +1,6 @@
 services:
   formfling:
-    image: ghcr.io/mtthw/formfling:${IMAGE_TAG:-main}
+    image: ghcr.io/mtthw/formfling:${IMAGE_TAG:-latest}
     # To build from this checkout instead, replace image with: build: .
     ports:
       - "${HOST_PORT:-8080}:${PORT:-8080}"

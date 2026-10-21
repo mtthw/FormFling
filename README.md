@@ -33,9 +33,9 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Compose reads `.env` for local settings. The tracked Compose file supplies defaults for optional values and requires the SMTP credentials and email addresses. Set `IMAGE_TAG` in `.env` to use a versioned image, such as `0.4.7`. `.env` is ignored by Git.
+Compose reads `.env` for local settings. The tracked Compose file supplies defaults for optional values and requires the SMTP credentials and email addresses. It uses the latest versioned release by default. Set `IMAGE_TAG` in `.env` to pin a version, such as `0.5.2`, or use `main` for the newest build from the main branch. `.env` is ignored by Git. To update a running container after a new image is published, run `docker compose pull` followed by `docker compose up -d`.
 
-Pushes to `main` publish `ghcr.io/mtthw/formfling:main`; version tags publish versioned images. New GHCR packages are private by default, so [make the package public](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility) for anonymous pulls or sign in to `ghcr.io` before using Compose.
+Pushes to `main` publish `ghcr.io/mtthw/formfling:main`; version tags publish `ghcr.io/mtthw/formfling:latest` and versioned images. New GHCR packages are private by default, so [make the package public](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility) for anonymous pulls or sign in to `ghcr.io` before using Compose.
 
 ### Docker
 
@@ -49,7 +49,7 @@ docker run -d \
   -e TO_EMAIL=recipient@example.com \
   -e STATUS_REDIRECT_URL=https://yourdomain.com/contact \
   -e ALLOWED_ORIGINS=https://www.yourdomain.com \
-  ghcr.io/mtthw/formfling:main
+  ghcr.io/mtthw/formfling:latest
 ```
 
 ## Configuration
