@@ -148,11 +148,15 @@ Each visitor IP can send up to `RATE_LIMIT_MAX_EMAILS` successful emails in a ro
 
 ## Development
 
+The [Justfile](Justfile) provides local and Docker Compose commands. With `just` installed, run `just` to list them, `just dev` to start the service from `.env`, or `just check` to run tests, vet, and build.
+
 ```bash
 git clone https://github.com/mtthw/FormFling.git
 cd FormFling
 go run .
 ```
+
+To publish a version, commit your changes on `main`, then run `just release` (patch), `just release minor`, or `just release major`. The recipe checks the clean checkout, fetches tags, runs `just check`, creates an annotated `vMAJOR.MINOR.PATCH` tag, and pushes `main` and the tag together. A pushed tag triggers the release workflows.
 
 ## Security
 
