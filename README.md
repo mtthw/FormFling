@@ -8,7 +8,16 @@ Haven't you always wanted a contact form on your website, but to keep your email
 
 ## About this fork
 
-This is a fork of [FormFling/FormFling](https://github.com/FormFling/FormFling), tailored for a small contact form hosted on your own server. The website provides the form and its success or error messages; FormFling accepts submissions and sends the email. This fork removes the built-in pages and reCAPTCHA, sends plain text messages with the visitor's address in `Reply-To`, redirects browser submissions back to the website, and adds a honeypot and rate limits per IP address. Releases here are maintained separately from upstream.
+This is a fork of [FormFling/FormFling](https://github.com/FormFling/FormFling).
+
+It maintains support for progressive enhancement.
+Forms can be created with or without JavaScript.
+The built-in status page and optional test form have been removed, so your website displays submission status through redirects and page fragments.
+Submission emails are plain text rather than HTML, with the visitor's address in `Reply-To`.
+This fork removes the built-in pages and reCAPTCHA.
+Instead, it implements a honeypot and per-IP rate limits.
+
+It is released separately from upstream.
 
 ## Features
 
