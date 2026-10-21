@@ -2,9 +2,8 @@ version: '3.8'
 
 services:
   formfling:
-    build: .
-    # Or use the published image:
-    # image: dungfu/formfling:latest
+    image: ghcr.io/mtthw/formfling:main
+    # To build from this checkout instead, replace image with: build: .
     ports:
       - "8080:8080"
     # Uncomment to use a custom email template:

@@ -22,12 +22,14 @@ Haven't you always wanted a contact form on your website, but to keep your email
 ### Docker Compose (Recommended)
 
 ```bash
-git clone https://github.com/FormFling/FormFling.git
+git clone https://github.com/mtthw/FormFling.git
 cd FormFling
 cp docker-compose.yml docker-compose.local.yml
 # Edit docker-compose.local.yml with your settings
 docker-compose -f docker-compose.local.yml up -d
 ```
+
+Pushes to `main` publish `ghcr.io/mtthw/formfling:main`; version tags publish versioned images. New GHCR packages are private by default, so [make the package public](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility) for anonymous pulls or sign in to `ghcr.io` before using Compose.
 
 ### Docker
 
@@ -40,7 +42,7 @@ docker run -d \
   -e FROM_EMAIL=your-email@gmail.com \
   -e TO_EMAIL=recipient@example.com \
   -e ALLOWED_ORIGINS=https://www.yourdomain.com \
-  dungfu/form-fling:latest
+  ghcr.io/mtthw/formfling:main
 ```
 
 ## Configuration
@@ -131,7 +133,7 @@ Each visitor IP can send up to `RATE_LIMIT_MAX_EMAILS` successful emails in a ro
 docker run -d \
   -v /path/to/template.html:/templates/custom.html \
   -e EMAIL_TEMPLATE=/templates/custom.html \
-  dungfu/form-fling:latest
+  ghcr.io/mtthw/formfling:main
 ```
 
 Template variables:
@@ -151,7 +153,7 @@ Template variables:
 docker run -d \
   -v /path/to/template.html:/templates/custom.html \
   -e STATUS_TEMPLATE=/templates/custom.html \
-  dungfu/form-fling:latest
+  ghcr.io/mtthw/formfling:main
 ```
 
 Template variables:
@@ -163,7 +165,7 @@ Template variables:
 ## Development
 
 ```bash
-git clone https://github.com/fireph/FormFling.git
+git clone https://github.com/mtthw/FormFling.git
 cd FormFling
 go mod download
 go run .
