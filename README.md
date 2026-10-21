@@ -10,7 +10,7 @@ Haven't you always wanted a contact form on your website, but to keep your email
 ## Features
 
 - Lightweight and multiplatform
-- Gmail SMTP support
+- SMTP support
 - Beautiful HTML email templates
 - Origin-based security
 - Configured status page return URL
@@ -24,10 +24,12 @@ Haven't you always wanted a contact form on your website, but to keep your email
 ```bash
 git clone https://github.com/mtthw/FormFling.git
 cd FormFling
-cp docker-compose.yml docker-compose.local.yml
-# Edit docker-compose.local.yml with your settings
-docker-compose -f docker-compose.local.yml up -d
+cp .env.example .env
+# Edit .env with your SMTP server, credentials, and email addresses
+docker compose up -d
 ```
+
+Compose reads `.env` for local settings. The tracked Compose file supplies defaults for optional values and requires the SMTP credentials and email addresses. Set `IMAGE_TAG` in `.env` to use a versioned image, such as `0.4.7`. `.env` is ignored by Git.
 
 Pushes to `main` publish `ghcr.io/mtthw/formfling:main`; version tags publish versioned images. New GHCR packages are private by default, so [make the package public](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility) for anonymous pulls or sign in to `ghcr.io` before using Compose.
 
@@ -51,7 +53,7 @@ Configure via environment variables:
 
 **Required:**
 - `SMTP_USERNAME` - SMTP Username
-- `SMTP_PASSWORD` - SMTP Password ([Gmail setup guide](#gmail-setup))
+- `SMTP_PASSWORD` - SMTP password or provider token
 - `FROM_EMAIL` - Sender email
 - `TO_EMAIL` - Where to send form submissions
 

@@ -2,41 +2,35 @@ version: '3.8'
 
 services:
   formfling:
-    image: ghcr.io/mtthw/formfling:main
+    image: ghcr.io/mtthw/formfling:${IMAGE_TAG:-main}
     # To build from this checkout instead, replace image with: build: .
     ports:
-      - "8080:8080"
+      - "${HOST_PORT:-8080}:${PORT:-8080}"
     # Uncomment to use a custom email template:
     # volumes:
     #   - ./custom_template.html:/templates/custom_template.html
     environment:
-      # Required SMTP settings
-      - SMTP_HOST=smtp.gmail.com
-      - SMTP_PORT=587
-      - SMTP_USERNAME=your-email@gmail.com
-      - SMTP_PASSWORD=your-app-password
-      
-      # Required email settings
-      - FROM_EMAIL=your-email@gmail.com
-      - FROM_NAME=FormFling
-      - TO_EMAIL=recipient@example.com
-      - TO_NAME=Your Name
-      
-      # Origin protection (comma-separated list)
-      - ALLOWED_ORIGINS=https://www.mydomain1.com,https://mydomain2.com
-      
-      # Optional customization
-      - FORM_TITLE=Contact Me
-      - STATUS_REDIRECT_URL=https://www.mydomain1.com/contact
-      # - RATE_LIMIT_MAX_EMAILS=3
-      # - RATE_LIMIT_WINDOW=24h
-      # - EMAIL_TEMPLATE=/templates/custom_template.html
-      - EMAIL_TEMPLATE=./web/templates/email_template.html
-      - PORT=8080
-      - TZ=UTC
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:?Set SMTP_USERNAME in .env}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:?Set SMTP_PASSWORD in .env}
+      FROM_EMAIL: ${FROM_EMAIL:?Set FROM_EMAIL in .env}
+      FROM_NAME: ${FROM_NAME:-FormFling}
+      TO_EMAIL: ${TO_EMAIL:?Set TO_EMAIL in .env}
+      TO_NAME: ${TO_NAME:-}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
+      FORM_TITLE: ${FORM_TITLE:-Contact Me}
+      STATUS_REDIRECT_URL: ${STATUS_REDIRECT_URL:-}
+      TRUSTED_PROXY_CIDRS: ${TRUSTED_PROXY_CIDRS:-}
+      RATE_LIMIT_MAX_EMAILS: ${RATE_LIMIT_MAX_EMAILS:-3}
+      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-24h}
+      EMAIL_TEMPLATE: ${EMAIL_TEMPLATE:-./web/templates/email_template.html}
+      STATUS_TEMPLATE: ${STATUS_TEMPLATE:-./web/templates/status_template.html}
+      PORT: ${PORT:-8080}
+      TZ: ${TZ:-UTC}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:$${PORT:-8080}/health"]
       interval: 30s
       timeout: 10s
       retries: 3
