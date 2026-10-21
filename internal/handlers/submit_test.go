@@ -337,6 +337,50 @@ func TestSubmitHandler_JSONRequest_ValidationError(t *testing.T) {
 	}
 }
 
+func TestSubmitHandler_JSONRequest_MessageMinimumLength(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		length     int
+		wantStatus int
+		wantError  string
+	}{
+		{"63 characters", 63, http.StatusBadRequest, "message must be at least 64 characters"},
+		{"64 characters", 64, http.StatusOK, ""},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			emailService := &mockEmailService{}
+			handler := newTestSubmitHandler(emailService)
+			body, err := json.Marshal(models.FormData{
+				Name:    "John Doe",
+				Email:   "john@example.com",
+				Message: strings.Repeat("a", tt.length),
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			req := httptest.NewRequest(http.MethodPost, "/submit", bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+			recorder := httptest.NewRecorder()
+			handler.Handle(recorder, req)
+
+			var response models.Response
+			if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+				t.Fatal(err)
+			}
+			if recorder.Code != tt.wantStatus || response.Error != tt.wantError {
+				t.Fatalf("HTTP %d, response %+v; want HTTP %d and error %q", recorder.Code, response, tt.wantStatus, tt.wantError)
+			}
+			wantCalls := 0
+			if tt.wantStatus == http.StatusOK {
+				wantCalls = 1
+			}
+			if emailService.calls != wantCalls {
+				t.Fatalf("email calls = %d, want %d", emailService.calls, wantCalls)
+			}
+		})
+	}
+}
+
 func TestSubmitHandler_JSONRequest_ParseError(t *testing.T) {
 	emailService := &mockEmailService{}
 	handler := newTestSubmitHandler(emailService)

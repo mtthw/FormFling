@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"strings"
 	"testing"
 
 	"formfling/internal/models"
@@ -114,5 +115,37 @@ func TestValidateForm(t *testing.T) {
 
 	if err := ValidateForm(invalidForm); err == nil {
 		t.Error("ValidateForm should fail for message too short")
+	}
+}
+
+func TestValidateFormMessageMinimumLength(t *testing.T) {
+	tests := []struct {
+		name    string
+		message string
+		wantErr bool
+	}{
+		{"63 characters", strings.Repeat("a", 63), true},
+		{"64 characters", strings.Repeat("a", 64), false},
+		{"surrounding whitespace does not count", " " + strings.Repeat("a", 63) + " ", true},
+		{"63 multibyte characters", strings.Repeat("é", 63), true},
+		{"64 multibyte characters", strings.Repeat("é", 64), false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			form := models.FormData{
+				Name:    "John Doe",
+				Email:   "john@example.com",
+				Message: tt.message,
+			}
+			err := ValidateForm(form)
+			if tt.wantErr {
+				if err == nil || err.Error() != "message must be at least 64 characters" {
+					t.Fatalf("expected minimum-length error, got %v", err)
+				}
+			} else if err != nil {
+				t.Fatalf("expected valid message, got %v", err)
+			}
+		})
 	}
 }

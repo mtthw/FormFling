@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"formfling/internal/models"
 )
@@ -45,8 +46,8 @@ func ValidateForm(form models.FormData) error {
 		return fmt.Errorf("email not valid")
 	}
 
-	if len(strings.TrimSpace(form.Message)) < 300 {
-		return fmt.Errorf("message not valid")
+	if utf8.RuneCountInString(strings.TrimSpace(form.Message)) < 64 {
+		return fmt.Errorf("message must be at least 64 characters")
 	}
 
 	return nil

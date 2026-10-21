@@ -91,7 +91,8 @@ Add this form to your website:
 <form action="https://your-formfling-domain.com/submit" method="POST">
   <input type="text" name="name" required>
   <input type="email" name="email" required>
-  <textarea name="message" minlength="300" required></textarea>
+  <textarea name="message" minlength="64" required></textarea>
+  <p>Message must be at least 64 characters.</p>
   <div aria-hidden="true" style="position:absolute;left:-10000px">
     <label>Company website <input type="text" name="company_website" tabindex="-1" autocomplete="off"></label>
   </div>

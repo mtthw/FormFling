@@ -100,7 +100,7 @@ func (h *SubmitHandler) Handle(w http.ResponseWriter, r *http.Request) {
 
 	// Validate form
 	if err := utils.ValidateForm(formData); err != nil {
-		h.handleError(w, r, "server rejected", http.StatusBadRequest)
+		h.handleError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 	complete, retryAfter := h.rateLimiter.reserve(clientIP(r, h.trustedProxies))
