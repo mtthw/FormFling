@@ -21,6 +21,12 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Determine version
+      id: version
+      run: echo "value=$(git describe --tags --always --match 'v[0-9]*')" >> "$GITHUB_OUTPUT"
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
@@ -58,5 +64,7 @@ jobs:
         push: ${{ github.event_name == 'push' && github.repository == 'mtthw/FormFling' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+        build-args: |
+          VERSION=${{ steps.version.outputs.value }}
         cache-from: type=gha
         cache-to: type=gha,mode=max

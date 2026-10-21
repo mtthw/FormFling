@@ -10,7 +10,8 @@ COPY go.mod ./
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags="-s -w" -o formfling .
+ARG VERSION=dev
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags="-s -w -X main.version=${VERSION}" -o formfling .
 
 # Final stage
 FROM alpine:latest

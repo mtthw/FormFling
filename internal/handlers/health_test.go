@@ -10,7 +10,7 @@ import (
 )
 
 func TestHealthHandler(t *testing.T) {
-	handler := NewHealthHandler()
+	handler := NewHealthHandler("v0.5.1-1-gabc1234")
 
 	req, err := http.NewRequest("GET", "/health", nil)
 	if err != nil {
@@ -39,6 +39,9 @@ func TestHealthHandler(t *testing.T) {
 
 	if response.Status != "ok" {
 		t.Errorf("Expected status 'ok', got %s", response.Status)
+	}
+	if response.Version != "v0.5.1-1-gabc1234" {
+		t.Errorf("Expected version 'v0.5.1-1-gabc1234', got %s", response.Version)
 	}
 
 	if response.Error != "" {

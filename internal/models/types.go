@@ -11,6 +11,7 @@ type FormData struct {
 }
 
 type Response struct {
-	Status string `json:"status"`
-	Error  string `json:"error,omitempty"`
+	Status  string `json:"status"`
+	Error   string `json:"error,omitempty"`
+	Version string `json:"version,omitempty"`
 }

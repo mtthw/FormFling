@@ -134,7 +134,9 @@ For visitors without JavaScript, add messages to your contact page that can be s
 ## API
 
 - `POST /submit` - Submit form
-- `GET /health` - Health check
+- `GET /health` - Health check and running build version
+
+Check a deployed instance with `curl https://your-formfling-host/health`. The response includes a version, for example `{"status":"ok","version":"v0.5.2"}`. Published images and binaries built from a tag report that release tag. Builds from later commits on `main` report the nearest tag plus the commit count and short Git hash (for example, `v0.5.2-1-gabc1234`). This distinguishes a moving `main` image from a release. Downloaded binaries also support `formfling --version` without requiring SMTP configuration. Local builds without an injected version report `dev`.
 
 Browser form submissions receive an immediate HTTP 303 to `STATUS_REDIRECT_URL` with `#form-success`, `#form-error`, or `#form-rate-limited`. Any existing fragment in the configured URL is replaced. The redirect ignores request supplied `redirect`, `Referer`, and `_redirect` values.
 

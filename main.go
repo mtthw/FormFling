@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -10,7 +12,17 @@ import (
 	"formfling/internal/services"
 )
 
+// Set at build time from the nearest Git release tag.
+var version = "dev"
+
 func main() {
+	showVersion := flag.Bool("version", false, "print the version and exit")
+	flag.Parse()
+	if *showVersion {
+		fmt.Printf("FormFling %s\n", version)
+		return
+	}
+
 	// Load configuration
 	cfg := config.Load()
 
@@ -38,7 +50,7 @@ func main() {
 
 	// Setup handlers
 	submitHandler := handlers.NewSubmitHandler(emailService, rateLimit, cfg.StatusRedirectURL, trustedProxies...)
-	healthHandler := handlers.NewHealthHandler()
+	healthHandler := handlers.NewHealthHandler(version)
 
 	// Setup router
 	r := http.NewServeMux()
@@ -48,7 +60,7 @@ func main() {
 	// Static file serving
 	r.Handle("/", http.FileServer(http.Dir("./web/static/")))
 
-	log.Printf("FormFling server starting on port %s", cfg.Port)
+	log.Printf("FormFling %s starting on port %s", version, cfg.Port)
 	log.Printf("Allowed origins: %v", cfg.AllowedOrigins)
 
 	server := &http.Server{

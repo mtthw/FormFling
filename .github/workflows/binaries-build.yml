@@ -48,6 +48,12 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Determine version
+      id: version
+      run: echo "value=$(git describe --tags --always --match 'v[0-9]*')" >> "$GITHUB_OUTPUT"
 
     - name: Set up Go
       uses: actions/setup-go@v5
@@ -78,8 +84,9 @@ jobs:
         GOOS: ${{ matrix.os }}
         GOARCH: ${{ matrix.arch }}
         CGO_ENABLED: 0
+        APP_VERSION: ${{ steps.version.outputs.value }}
       run: |
-        go build -a -installsuffix cgo -ldflags "-s -w" -o ${{ steps.vars.outputs.binary_name }} .
+        go build -a -installsuffix cgo -ldflags "-s -w -X main.version=${APP_VERSION}" -o ${{ steps.vars.outputs.binary_name }} .
 
     - name: Create release directory
       run: |
