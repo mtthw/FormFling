@@ -249,6 +249,53 @@ func TestSubmitHandler_JSONRequest_Success(t *testing.T) {
 	}
 }
 
+func TestSubmitHandler_HoneypotBrowserFormDoesNotSendOrUseLimit(t *testing.T) {
+	email := &mockEmailService{}
+	handler := NewSubmitHandler(email, config.RateLimitSettings{MaxEmails: 1, Window: time.Hour}, "https://example.com/contact")
+
+	spam := url.Values{"company_website": {"https://spam.example"}}
+	req := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(spam.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.RemoteAddr = "198.51.100.1:1234"
+	recorder := httptest.NewRecorder()
+	handler.Handle(recorder, req)
+	if recorder.Code != http.StatusSeeOther || recorder.Header().Get("Location") != "https://example.com/contact#form-success" || email.calls != 0 {
+		t.Fatalf("honeypot response: HTTP %d, location %q, email calls %d", recorder.Code, recorder.Header().Get("Location"), email.calls)
+	}
+
+	valid := url.Values{
+		"name":            {"Alice"},
+		"email":           {"alice@example.com"},
+		"message":         {strings.Repeat("valid message ", 30)},
+		"company_website": {"   "},
+	}
+	req = httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(valid.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.RemoteAddr = "198.51.100.1:1234"
+	recorder = httptest.NewRecorder()
+	handler.Handle(recorder, req)
+	if recorder.Code != http.StatusSeeOther || email.calls != 1 {
+		t.Fatalf("valid follow-up: HTTP %d, email calls %d", recorder.Code, email.calls)
+	}
+}
+
+func TestSubmitHandler_HoneypotJSONDoesNotSend(t *testing.T) {
+	email := &mockEmailService{}
+	handler := newTestSubmitHandler(email)
+	req := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(`{"company_website":"https://spam.example"}`))
+	req.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
+	handler.Handle(recorder, req)
+
+	var response models.Response
+	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+		t.Fatal(err)
+	}
+	if recorder.Code != http.StatusOK || response.Status != "message sent" || email.calls != 0 {
+		t.Fatalf("honeypot response: HTTP %d, body %q, email calls %d", recorder.Code, recorder.Body.String(), email.calls)
+	}
+}
+
 func TestSubmitHandler_JSONRequest_ValidationError(t *testing.T) {
 	emailService := &mockEmailService{}
 	handler := newTestSubmitHandler(emailService)

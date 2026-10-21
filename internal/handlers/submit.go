@@ -82,13 +82,20 @@ func (h *SubmitHandler) Handle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		formData = models.FormData{
-			Name:    utils.CleanString(r.FormValue("name")),
-			Email:   utils.CleanString(r.FormValue("email")),
-			Subject: utils.CleanString(r.FormValue("subject")),
-			Message: utils.CleanString(r.FormValue("message")),
-			Phone:   utils.CleanString(r.FormValue("phone")),
-			Website: utils.CleanString(r.FormValue("website")),
+			Name:           utils.CleanString(r.FormValue("name")),
+			Email:          utils.CleanString(r.FormValue("email")),
+			Subject:        utils.CleanString(r.FormValue("subject")),
+			Message:        utils.CleanString(r.FormValue("message")),
+			Phone:          utils.CleanString(r.FormValue("phone")),
+			Website:        utils.CleanString(r.FormValue("website")),
+			CompanyWebsite: r.FormValue("company_website"),
 		}
+	}
+
+	// Quietly accept automated submissions without sending mail or using a rate-limit slot.
+	if strings.TrimSpace(formData.CompanyWebsite) != "" {
+		h.handleSuccess(w, r)
+		return
 	}
 
 	// Validate form

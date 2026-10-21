@@ -88,9 +88,14 @@ Add this form to your website:
   <input type="text" name="name" required>
   <input type="email" name="email" required>
   <textarea name="message" minlength="300" required></textarea>
+  <div aria-hidden="true" style="position:absolute;left:-10000px">
+    <label>Company website <input type="text" name="company_website" tabindex="-1" autocomplete="off"></label>
+  </div>
   <button type="submit">Send</button>
 </form>
 ```
+
+Leave `company_website` empty. It is a honeypot: filled submissions receive the normal success response, but no email is sent and no rate-limit slot is used. This catches simple bots; keep the existing rate limit in place as well.
 
 ### JavaScript/AJAX
 
