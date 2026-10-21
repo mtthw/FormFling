@@ -15,12 +15,10 @@ services:
       TO_EMAIL: ${TO_EMAIL:?Set TO_EMAIL in .env}
       TO_NAME: ${TO_NAME:-}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
-      FORM_TITLE: ${FORM_TITLE:-Contact Me}
-      STATUS_REDIRECT_URL: ${STATUS_REDIRECT_URL:-}
+      STATUS_REDIRECT_URL: ${STATUS_REDIRECT_URL:?Set STATUS_REDIRECT_URL to your contact page in .env}
       TRUSTED_PROXY_CIDRS: ${TRUSTED_PROXY_CIDRS:-}
       RATE_LIMIT_MAX_EMAILS: ${RATE_LIMIT_MAX_EMAILS:-3}
       RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-24h}
-      STATUS_TEMPLATE: ${STATUS_TEMPLATE:-./web/templates/status_template.html}
       PORT: ${PORT:-8080}
       TZ: ${TZ:-UTC}
     restart: unless-stopped

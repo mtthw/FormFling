@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/netip"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -22,13 +23,15 @@ type SubmitHandler struct {
 	emailService   services.EmailSender
 	rateLimiter    *emailRateLimiter
 	trustedProxies []netip.Prefix
+	redirectURL    string
 }
 
-func NewSubmitHandler(emailService services.EmailSender, rateLimit config.RateLimitSettings, trustedProxies ...netip.Prefix) *SubmitHandler {
+func NewSubmitHandler(emailService services.EmailSender, rateLimit config.RateLimitSettings, redirectURL string, trustedProxies ...netip.Prefix) *SubmitHandler {
 	return &SubmitHandler{
 		emailService:   emailService,
 		rateLimiter:    newEmailRateLimiter(rateLimit),
 		trustedProxies: trustedProxies,
+		redirectURL:    redirectURL,
 	}
 }
 
@@ -124,7 +127,7 @@ func (h *SubmitHandler) handleRateLimit(w http.ResponseWriter, r *http.Request, 
 		h.handleError(w, r, "email rate limit exceeded; try again later", http.StatusTooManyRequests)
 		return
 	}
-	http.Redirect(w, r, "/status?type=rate_limited", http.StatusSeeOther)
+	h.redirect(w, r, "form-rate-limited")
 }
 
 func (h *SubmitHandler) parseJSONRequest(r *http.Request) (models.FormData, error) {
@@ -162,7 +165,7 @@ func (h *SubmitHandler) handleBodyTooLarge(w http.ResponseWriter, r *http.Reques
 		h.handleError(w, r, "request body too large", http.StatusRequestEntityTooLarge)
 		return
 	}
-	http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+	h.redirect(w, r, "form-error")
 }
 
 func (h *SubmitHandler) handleSuccess(w http.ResponseWriter, r *http.Request) {
@@ -175,7 +178,7 @@ func (h *SubmitHandler) handleSuccess(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Handle form submission with redirect
-	http.Redirect(w, r, "/status?type=success", http.StatusSeeOther)
+	h.redirect(w, r, "form-success")
 }
 
 func (h *SubmitHandler) handleError(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int) {
@@ -189,7 +192,18 @@ func (h *SubmitHandler) handleError(w http.ResponseWriter, r *http.Request, erro
 	}
 
 	// Handle form submission with redirect to error page
-	http.Redirect(w, r, "/status?type=error", http.StatusSeeOther)
+	h.redirect(w, r, "form-error")
+}
+
+func (h *SubmitHandler) redirect(w http.ResponseWriter, r *http.Request, fragment string) {
+	u, err := url.Parse(h.redirectURL) // Validated at startup.
+	if err != nil {
+		http.Error(w, "redirect unavailable", http.StatusInternalServerError)
+		return
+	}
+	u.Fragment = fragment
+	u.RawFragment = ""
+	http.Redirect(w, r, u.String(), http.StatusSeeOther)
 }
 
 func (h *SubmitHandler) isAjaxRequest(r *http.Request) bool {

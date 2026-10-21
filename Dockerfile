@@ -23,9 +23,6 @@ WORKDIR /root/
 # Copy the binary from builder stage
 COPY --from=builder /app/formfling .
 
-# Copy templates
-COPY --from=builder /app/web/templates ./web/templates
-
 # Copy the static directory
 COPY --from=builder /app/web/static ./web/static
 

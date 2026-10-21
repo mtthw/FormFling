@@ -19,8 +19,6 @@ type Config struct {
 	ToEmail            string
 	ToName             string
 	AllowedOrigins     []string
-	FormTitle          string
-	StatusTemplate     string
 	StatusRedirectURL  string
 	TrustedProxyCIDRs  string
 	RateLimitMaxEmails string
@@ -38,8 +36,6 @@ func Load() *Config {
 		FromEmail:          getEnv("FROM_EMAIL", ""),
 		ToEmail:            getEnv("TO_EMAIL", ""),
 		ToName:             getEnv("TO_NAME", ""),
-		FormTitle:          getEnv("FORM_TITLE", "Contact Me"),
-		StatusTemplate:     getEnv("STATUS_TEMPLATE", "./web/templates/status_template.html"),
 		StatusRedirectURL:  getEnv("STATUS_REDIRECT_URL", ""),
 		TrustedProxyCIDRs:  getEnv("TRUSTED_PROXY_CIDRS", ""),
 		RateLimitMaxEmails: getEnv("RATE_LIMIT_MAX_EMAILS", "3"),
@@ -58,10 +54,10 @@ func Load() *Config {
 	return config
 }
 
-// ValidateStatusRedirectURL rejects URL schemes that could execute script in a browser.
+// ValidateStatusRedirectURL requires a configured HTTP(S) destination for browser forms.
 func ValidateStatusRedirectURL(raw string) error {
 	if raw == "" {
-		return nil
+		return fmt.Errorf("STATUS_REDIRECT_URL is required")
 	}
 
 	u, err := url.Parse(raw)

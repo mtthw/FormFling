@@ -18,7 +18,7 @@ import (
 )
 
 func newTestSubmitHandler(email services.EmailSender) *SubmitHandler {
-	return NewSubmitHandler(email, config.RateLimitSettings{MaxEmails: 3, Window: 24 * time.Hour})
+	return NewSubmitHandler(email, config.RateLimitSettings{MaxEmails: 3, Window: 24 * time.Hour}, "https://example.com/contact?source=form#old-section")
 }
 
 // Mock email service for testing
@@ -77,8 +77,15 @@ func TestSubmitHandler_RejectsOversizedBodies(t *testing.T) {
 			recorder := httptest.NewRecorder()
 
 			handler.Handle(recorder, req)
-			if recorder.Code != http.StatusRequestEntityTooLarge {
-				t.Errorf("expected 413, got %d", recorder.Code)
+			wantStatus := http.StatusSeeOther
+			if tt.acceptJSON {
+				wantStatus = http.StatusRequestEntityTooLarge
+			}
+			if recorder.Code != wantStatus {
+				t.Errorf("expected %d, got %d", wantStatus, recorder.Code)
+			}
+			if !tt.acceptJSON && recorder.Header().Get("Location") != "https://example.com/contact?source=form#form-error" {
+				t.Errorf("unexpected browser redirect: %q", recorder.Header().Get("Location"))
 			}
 			if email.calls != 0 {
 				t.Error("oversized request reached the email service")
@@ -152,8 +159,8 @@ func TestSubmitHandler_RedirectMode(t *testing.T) {
 
 	// Should have location header with success status
 	location := rr.Header().Get("Location")
-	if location != "/status?type=success" {
-		t.Errorf("Expected status page redirect, got %s", location)
+	if location != "https://example.com/contact?source=form#form-success" {
+		t.Errorf("Expected success redirect, got %s", location)
 	}
 }
 
@@ -336,14 +343,15 @@ func TestSubmitHandler_IgnoresCustomRedirect(t *testing.T) {
 		t.Fatal(err)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Referer", "https://attacker.example/phishing")
 
 	rr := httptest.NewRecorder()
 	handler.Handle(rr, req)
 
-	// A request-supplied redirect cannot bypass the status page.
+	// A request-supplied redirect cannot replace the configured destination.
 	location := rr.Header().Get("Location")
-	if location != "/status?type=success" {
-		t.Errorf("Expected status page redirect, got %s", location)
+	if location != "https://example.com/contact?source=form#form-success" {
+		t.Errorf("Expected configured redirect, got %s", location)
 	}
 }
 
@@ -374,8 +382,8 @@ func TestSubmitHandler_ValidationError(t *testing.T) {
 	}
 
 	location := rr.Header().Get("Location")
-	if location != "/status?type=error" {
-		t.Errorf("Expected error status page redirect, got %s", location)
+	if location != "https://example.com/contact?source=form#form-error" {
+		t.Errorf("Expected error redirect, got %s", location)
 	}
 }
 
@@ -435,9 +443,9 @@ func TestSubmitHandler_MethodNotAllowed(t *testing.T) {
 	}
 
 	location := rr.Header().Get("Location")
-	// Should redirect to status page since there's no referer
-	if !strings.Contains(location, "/status?type=error") {
-		t.Errorf("Expected redirect URL to contain /status?type=error, got %s", location)
+	// The configured destination is used even without Referer.
+	if location != "https://example.com/contact?source=form#form-error" {
+		t.Errorf("Expected configured error redirect, got %s", location)
 	}
 }
 
@@ -575,9 +583,9 @@ func TestSubmitHandler_ParseFormError(t *testing.T) {
 	}
 
 	location := rr.Header().Get("Location")
-	// Should redirect to status page since there's no referer
-	if !strings.Contains(location, "/status?type=error") {
-		t.Errorf("Expected redirect URL to contain /status?type=error, got %s", location)
+	// The configured destination is used even without Referer.
+	if location != "https://example.com/contact?source=form#form-error" {
+		t.Errorf("Expected configured error redirect, got %s", location)
 	}
 }
 
@@ -610,7 +618,7 @@ func TestSubmitHandler_RateLimitsSuccessfulEmailsPerIP(t *testing.T) {
 	if recorder.Code != http.StatusTooManyRequests || recorder.Header().Get("Retry-After") == "" || email.calls != 3 {
 		t.Fatalf("fourth submission: HTTP %d, retry-after %q, email calls %d", recorder.Code, recorder.Header().Get("Retry-After"), email.calls)
 	}
-	if got := submit("198.51.100.1", false).Header().Get("Location"); got != "/status?type=rate_limited" {
+	if got := submit("198.51.100.1", false).Header().Get("Location"); got != "https://example.com/contact?source=form#form-rate-limited" {
 		t.Fatalf("browser submission redirected to %q", got)
 	}
 	if got := submit("198.51.100.2", true).Code; got != http.StatusOK || email.calls != 4 {

@@ -10,7 +10,6 @@ func TestLoad(t *testing.T) {
 	originalPort := os.Getenv("PORT")
 	originalSMTPHost := os.Getenv("SMTP_HOST")
 	originalOrigins := os.Getenv("ALLOWED_ORIGINS")
-	originalStatusTemplate := os.Getenv("STATUS_TEMPLATE")
 	originalStatusRedirect := os.Getenv("STATUS_REDIRECT_URL")
 	originalRateLimitMax := os.Getenv("RATE_LIMIT_MAX_EMAILS")
 	originalRateLimitWindow := os.Getenv("RATE_LIMIT_WINDOW")
@@ -20,7 +19,6 @@ func TestLoad(t *testing.T) {
 		os.Setenv("PORT", originalPort)
 		os.Setenv("SMTP_HOST", originalSMTPHost)
 		os.Setenv("ALLOWED_ORIGINS", originalOrigins)
-		os.Setenv("STATUS_TEMPLATE", originalStatusTemplate)
 		os.Setenv("STATUS_REDIRECT_URL", originalStatusRedirect)
 		os.Setenv("RATE_LIMIT_MAX_EMAILS", originalRateLimitMax)
 		os.Setenv("RATE_LIMIT_WINDOW", originalRateLimitWindow)
@@ -30,7 +28,6 @@ func TestLoad(t *testing.T) {
 	os.Unsetenv("PORT")
 	os.Unsetenv("SMTP_HOST")
 	os.Unsetenv("ALLOWED_ORIGINS")
-	os.Unsetenv("STATUS_TEMPLATE")
 	os.Unsetenv("STATUS_REDIRECT_URL")
 	os.Unsetenv("RATE_LIMIT_MAX_EMAILS")
 	os.Unsetenv("RATE_LIMIT_WINDOW")
@@ -49,9 +46,6 @@ func TestLoad(t *testing.T) {
 		t.Errorf("Expected SMTP port 587, got %d", cfg.SMTPPort)
 	}
 
-	if cfg.StatusTemplate != "./web/templates/status_template.html" {
-		t.Errorf("Expected status template './web/templates/status_template.html', got %s", cfg.StatusTemplate)
-	}
 	if cfg.StatusRedirectURL != "" {
 		t.Errorf("Expected no default status redirect, got %s", cfg.StatusRedirectURL)
 	}
@@ -63,7 +57,6 @@ func TestLoad(t *testing.T) {
 	os.Setenv("PORT", "3000")
 	os.Setenv("SMTP_HOST", "smtp.example.com")
 	os.Setenv("ALLOWED_ORIGINS", "https://example.com,https://test.com")
-	os.Setenv("STATUS_TEMPLATE", "/custom/status_template.html")
 	os.Setenv("STATUS_REDIRECT_URL", "https://example.com/contact")
 	os.Setenv("RATE_LIMIT_MAX_EMAILS", "5")
 	os.Setenv("RATE_LIMIT_WINDOW", "12h")
@@ -86,9 +79,6 @@ func TestLoad(t *testing.T) {
 		t.Errorf("Expected https://example.com, got %s", cfg.AllowedOrigins[0])
 	}
 
-	if cfg.StatusTemplate != "/custom/status_template.html" {
-		t.Errorf("Expected status template '/custom/status_template.html', got %s", cfg.StatusTemplate)
-	}
 	if cfg.StatusRedirectURL != "https://example.com/contact" {
 		t.Errorf("Expected configured status redirect, got %s", cfg.StatusRedirectURL)
 	}
@@ -102,7 +92,7 @@ func TestValidateStatusRedirectURL(t *testing.T) {
 		url   string
 		valid bool
 	}{
-		{"", true},
+		{"", false},
 		{"https://example.com/contact?from=form", true},
 		{"http://localhost:3000/contact", true},
 		{"javascript:alert(1)", false},

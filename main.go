@@ -37,15 +37,13 @@ func main() {
 	emailService := services.NewEmailService(cfg)
 
 	// Setup handlers
-	submitHandler := handlers.NewSubmitHandler(emailService, rateLimit, trustedProxies...)
+	submitHandler := handlers.NewSubmitHandler(emailService, rateLimit, cfg.StatusRedirectURL, trustedProxies...)
 	healthHandler := handlers.NewHealthHandler()
-	statusHandler := handlers.NewStatusHandler(cfg)
 
 	// Setup router
 	r := http.NewServeMux()
 	r.HandleFunc("POST /submit", submitHandler.Handle)
 	r.HandleFunc("GET /health", healthHandler.Handle)
-	r.HandleFunc("GET /status", statusHandler.Handle)
 
 	// Static file serving
 	r.Handle("/", http.FileServer(http.Dir("./web/static/")))
