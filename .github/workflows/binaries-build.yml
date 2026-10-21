@@ -92,7 +92,6 @@ jobs:
       run: |
         mkdir -p release/formfling-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}
         cp ${{ steps.vars.outputs.binary_name }} release/formfling-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}/
-        cp -r web/ release/formfling-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}/
         cp README.md release/formfling-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}/
         cp LICENSE release/formfling-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}/
         cp .env.example release/formfling-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}/

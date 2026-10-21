@@ -24,9 +24,6 @@ WORKDIR /root/
 # Copy the binary from builder stage
 COPY --from=builder /app/formfling .
 
-# Copy the static directory
-COPY --from=builder /app/web/static ./web/static
-
 # Expose port
 EXPOSE 8080
 

@@ -1,6 +1,6 @@
 # FormFling
 
-![FormFling](https://raw.githubusercontent.com/fireph/FormFling/main/web/static/images/banner-2k-transparent.png)
+![FormFling](assets/images/banner-2k-transparent.png)
 
 Haven't you always wanted a contact form on your website, but to keep your email private and not spend a ton of money on a paid service? FormFling is a self-hosted contact form service that forwards submissions to your email via SMTP. Think Formspree, but running on your own server.
 

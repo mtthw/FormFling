@@ -65,9 +65,6 @@ func main() {
 	r.HandleFunc("POST /submit", submitHandler.Handle)
 	r.HandleFunc("GET /health", healthHandler.Handle)
 
-	// Static file serving
-	r.Handle("/", http.FileServer(http.Dir("./web/static/")))
-
 	log.Printf("FormFling %s starting on port %s", version, cfg.Port)
 	log.Printf("Allowed origins: %v", cfg.AllowedOrigins)
 
