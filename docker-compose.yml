@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   formfling:
     image: ghcr.io/mtthw/formfling:${IMAGE_TAG:-main}
