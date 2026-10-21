@@ -10,6 +10,7 @@ Haven't you always wanted a contact form on your website, but to keep your email
 ## Features
 
 - Lightweight and multiplatform
+- No third-party Go dependencies
 - SMTP support
 - Plain text submission emails with direct reply to the submitter
 - Origin-based security

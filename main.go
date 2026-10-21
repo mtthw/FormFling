@@ -8,8 +8,6 @@ import (
 	"formfling/internal/handlers"
 	"formfling/internal/middleware"
 	"formfling/internal/services"
-
-	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -44,22 +42,20 @@ func main() {
 	statusHandler := handlers.NewStatusHandler(cfg)
 
 	// Setup router
-	r := mux.NewRouter()
-	r.Use(middleware.CORS(cfg))
-
-	r.HandleFunc("/submit", submitHandler.Handle).Methods("POST", "OPTIONS")
-	r.HandleFunc("/health", healthHandler.Handle).Methods("GET")
-	r.HandleFunc("/status", statusHandler.Handle).Methods("GET")
+	r := http.NewServeMux()
+	r.HandleFunc("POST /submit", submitHandler.Handle)
+	r.HandleFunc("GET /health", healthHandler.Handle)
+	r.HandleFunc("GET /status", statusHandler.Handle)
 
 	// Static file serving
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./web/static/")))
+	r.Handle("/", http.FileServer(http.Dir("./web/static/")))
 
 	log.Printf("FormFling server starting on port %s", cfg.Port)
 	log.Printf("Allowed origins: %v", cfg.AllowedOrigins)
 
 	server := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           r,
+		Handler:           middleware.CORS(cfg)(r),
 		ReadHeaderTimeout: config.HTTPReadHeaderTimeout,
 		ReadTimeout:       config.HTTPReadTimeout,
 		WriteTimeout:      config.HTTPWriteTimeout,
