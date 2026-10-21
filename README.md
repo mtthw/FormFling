@@ -68,6 +68,7 @@ Configure via environment variables:
 - `TRUSTED_PROXY_CIDRS` - Optional comma-separated CIDRs for reverse proxies that set `X-Forwarded-For`; default: none
 - `RATE_LIMIT_MAX_EMAILS` - Maximum successful emails per visitor IP in each rolling window (default: 3)
 - `RATE_LIMIT_WINDOW` - Rolling window as a Go duration, such as `1h`, `24h`, or `48h` (default: `24h`)
+- `EXPOSE_VERSION` - Set to `false` to omit the build version from the public health response (default: `true`; invalid values prevent startup)
 
 See [.env.example](.env.example) for all options.
 
@@ -136,7 +137,7 @@ For visitors without JavaScript, add messages to your contact page that can be s
 - `POST /submit` - Submit form
 - `GET /health` - Health check and running build version
 
-Check a deployed instance with `curl https://your-formfling-host/health`. The response includes a version, for example `{"status":"ok","version":"v0.5.2"}`. Published images and binaries built from a tag report that release tag. Builds from later commits on `main` report the nearest tag plus the commit count and short Git hash (for example, `v0.5.2-1-gabc1234`). This distinguishes a moving `main` image from a release. Downloaded binaries also support `formfling --version` without requiring SMTP configuration. Local builds without an injected version report `dev`.
+Check a deployed instance with `curl https://your-formfling-host/health`. By default the response includes a version, for example `{"status":"ok","version":"v0.5.2"}`. Set `EXPOSE_VERSION=false` to return only `{"status":"ok"}`. Published images and binaries built from a tag report that release tag. Builds from later commits on `main` report the nearest tag plus the commit count and short Git hash (for example, `v0.5.2-1-gabc1234`). This distinguishes a moving `main` image from a release. Downloaded binaries also support `formfling --version` without requiring SMTP configuration. Local builds without an injected version report `dev`.
 
 Browser form submissions receive an immediate HTTP 303 to `STATUS_REDIRECT_URL` with `#form-success`, `#form-error`, or `#form-rate-limited`. Any existing fragment in the configured URL is replaced. The redirect ignores request supplied `redirect`, `Referer`, and `_redirect` values.
 

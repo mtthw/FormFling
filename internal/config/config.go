@@ -23,6 +23,7 @@ type Config struct {
 	TrustedProxyCIDRs  string
 	RateLimitMaxEmails string
 	RateLimitWindow    string
+	ExposeVersion      string
 }
 
 func Load() *Config {
@@ -40,6 +41,7 @@ func Load() *Config {
 		TrustedProxyCIDRs:  getEnv("TRUSTED_PROXY_CIDRS", ""),
 		RateLimitMaxEmails: getEnv("RATE_LIMIT_MAX_EMAILS", "3"),
 		RateLimitWindow:    getEnv("RATE_LIMIT_WINDOW", "24h"),
+		ExposeVersion:      getEnv("EXPOSE_VERSION", "true"),
 	}
 
 	// Parse allowed origins
@@ -52,6 +54,14 @@ func Load() *Config {
 	}
 
 	return config
+}
+
+func ParseExposeVersion(value string) (bool, error) {
+	expose, err := strconv.ParseBool(value)
+	if err != nil {
+		return false, fmt.Errorf("EXPOSE_VERSION must be true or false: %w", err)
+	}
+	return expose, nil
 }
 
 // ValidateStatusRedirectURL requires a configured HTTP(S) destination for browser forms.

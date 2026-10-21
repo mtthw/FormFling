@@ -48,3 +48,11 @@ func TestHealthHandler(t *testing.T) {
 		t.Errorf("Expected no error, got %s", response.Error)
 	}
 }
+
+func TestHealthHandlerOmitsHiddenVersion(t *testing.T) {
+	rr := httptest.NewRecorder()
+	NewHealthHandler("").Handle(rr, httptest.NewRequest(http.MethodGet, "/health", nil))
+	if got := rr.Body.String(); got != "{\"status\":\"ok\"}\n" {
+		t.Errorf("unexpected public health response: %q", got)
+	}
+}

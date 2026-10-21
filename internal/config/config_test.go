@@ -13,6 +13,7 @@ func TestLoad(t *testing.T) {
 	originalStatusRedirect := os.Getenv("STATUS_REDIRECT_URL")
 	originalRateLimitMax := os.Getenv("RATE_LIMIT_MAX_EMAILS")
 	originalRateLimitWindow := os.Getenv("RATE_LIMIT_WINDOW")
+	originalExposeVersion := os.Getenv("EXPOSE_VERSION")
 
 	// Clean up after test
 	defer func() {
@@ -22,6 +23,7 @@ func TestLoad(t *testing.T) {
 		os.Setenv("STATUS_REDIRECT_URL", originalStatusRedirect)
 		os.Setenv("RATE_LIMIT_MAX_EMAILS", originalRateLimitMax)
 		os.Setenv("RATE_LIMIT_WINDOW", originalRateLimitWindow)
+		os.Setenv("EXPOSE_VERSION", originalExposeVersion)
 	}()
 
 	// Test default values
@@ -31,6 +33,7 @@ func TestLoad(t *testing.T) {
 	os.Unsetenv("STATUS_REDIRECT_URL")
 	os.Unsetenv("RATE_LIMIT_MAX_EMAILS")
 	os.Unsetenv("RATE_LIMIT_WINDOW")
+	os.Unsetenv("EXPOSE_VERSION")
 
 	cfg := Load()
 
@@ -52,6 +55,9 @@ func TestLoad(t *testing.T) {
 	if cfg.RateLimitMaxEmails != "3" || cfg.RateLimitWindow != "24h" {
 		t.Errorf("Expected default rate limit 3 per 24h, got %s per %s", cfg.RateLimitMaxEmails, cfg.RateLimitWindow)
 	}
+	if cfg.ExposeVersion != "true" {
+		t.Errorf("Expected version exposure to default to true, got %q", cfg.ExposeVersion)
+	}
 
 	// Test custom values
 	os.Setenv("PORT", "3000")
@@ -60,6 +66,7 @@ func TestLoad(t *testing.T) {
 	os.Setenv("STATUS_REDIRECT_URL", "https://example.com/contact")
 	os.Setenv("RATE_LIMIT_MAX_EMAILS", "5")
 	os.Setenv("RATE_LIMIT_WINDOW", "12h")
+	os.Setenv("EXPOSE_VERSION", "false")
 
 	cfg = Load()
 
@@ -84,6 +91,26 @@ func TestLoad(t *testing.T) {
 	}
 	if cfg.RateLimitMaxEmails != "5" || cfg.RateLimitWindow != "12h" {
 		t.Errorf("Expected configured rate limit 5 per 12h, got %s per %s", cfg.RateLimitMaxEmails, cfg.RateLimitWindow)
+	}
+	if cfg.ExposeVersion != "false" {
+		t.Errorf("Expected configured version exposure false, got %q", cfg.ExposeVersion)
+	}
+}
+
+func TestParseExposeVersion(t *testing.T) {
+	for _, tt := range []struct {
+		value string
+		want  bool
+		valid bool
+	}{
+		{value: "true", want: true, valid: true},
+		{value: "false", want: false, valid: true},
+		{value: "maybe", valid: false},
+	} {
+		got, err := ParseExposeVersion(tt.value)
+		if (err == nil) != tt.valid || (err == nil && got != tt.want) {
+			t.Errorf("ParseExposeVersion(%q) = %t, %v; want %t, valid %t", tt.value, got, err, tt.want, tt.valid)
+		}
 	}
 }
 

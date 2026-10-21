@@ -44,13 +44,21 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	exposeVersion, err := config.ParseExposeVersion(cfg.ExposeVersion)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Initialize services
 	emailService := services.NewEmailService(cfg)
 
 	// Setup handlers
 	submitHandler := handlers.NewSubmitHandler(emailService, rateLimit, cfg.StatusRedirectURL, trustedProxies...)
-	healthHandler := handlers.NewHealthHandler(version)
+	publicVersion := ""
+	if exposeVersion {
+		publicVersion = version
+	}
+	healthHandler := handlers.NewHealthHandler(publicVersion)
 
 	// Setup router
 	r := http.NewServeMux()
