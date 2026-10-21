@@ -20,7 +20,7 @@ func CleanString(input string) string {
 
 	result := input
 	for _, badWord := range bad {
-		result = strings.ReplaceAll(strings.ToLower(result), badWord, "")
+		result = regexp.MustCompile(`(?i)`+regexp.QuoteMeta(badWord)).ReplaceAllString(result, "")
 	}
 
 	return strings.TrimSpace(result)

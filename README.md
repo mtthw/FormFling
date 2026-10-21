@@ -11,7 +11,7 @@ Haven't you always wanted a contact form on your website, but to keep your email
 
 - Lightweight and multiplatform
 - SMTP support
-- Beautiful HTML email templates
+- Plain text submission emails with direct reply to the submitter
 - Origin-based security
 - Configured status page return URL
 - Health check endpoint
@@ -54,7 +54,7 @@ Configure via environment variables:
 **Required:**
 - `SMTP_USERNAME` - SMTP Username
 - `SMTP_PASSWORD` - SMTP password or provider token
-- `FROM_EMAIL` - Sender email
+- `FROM_EMAIL` - Address your SMTP provider permits you to send from (for this fork, set it to `contact@mtthw.xyz`)
 - `TO_EMAIL` - Where to send form submissions
 
 **Optional:**
@@ -69,6 +69,8 @@ Configure via environment variables:
 - `RATE_LIMIT_WINDOW` - Rolling window as a Go duration, such as `1h`, `24h`, or `48h` (default: `24h`)
 
 See [.env.example](.env.example) for all options.
+
+Submission emails use the visitor's name as the display name, `FROM_EMAIL` as the actual sender, and the visitor's email as `Reply-To`. Replies in most mail clients go to the visitor. The submitted subject is used when present; otherwise the subject is `Message from <name>`. The default message is plain text and starts with the visitor's message. Configure your mail provider to authenticate the `FROM_EMAIL` domain (SPF and/or DKIM) for reliable delivery. A form visitor's address should not be used as `From`, because their domain may not authorize your SMTP server to send mail for it.
 
 ### Gmail Setup
 
@@ -127,29 +129,7 @@ Each visitor IP can send up to `RATE_LIMIT_MAX_EMAILS` successful emails in a ro
 {"status": "error", "error": "description"}
 ```
 
-## Custom Templates
-
-### Custom email template
-
-```bash
-docker run -d \
-  -v /path/to/template.html:/templates/custom.html \
-  -e EMAIL_TEMPLATE=/templates/custom.html \
-  ghcr.io/mtthw/formfling:main
-```
-
-Template variables:
-- `{{.FormData.Name}}` - Sender's name
-- `{{.FormData.Email}}` - Sender's email
-- `{{.FormData.Subject}}` - Email subject
-- `{{.FormData.Message}}` - Email message
-- `{{.FormData.Phone}}` - Sender's phone number
-- `{{.FormData.Website}}` - Sender's website
-- `{{.SubmittedTime}}` - Time the form was submitted (e.g., "03:04 PM")
-- `{{.SubmittedDate}}` - Date the form was submitted (e.g., "02 January 2006")
-- `{{.Origin}}` - Origin URL where the form was submitted from
-
-### Custom status template
+## Custom Status Template
 
 ```bash
 docker run -d \

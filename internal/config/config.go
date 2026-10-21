@@ -16,12 +16,10 @@ type Config struct {
 	SMTPUsername       string
 	SMTPPassword       string
 	FromEmail          string
-	FromName           string
 	ToEmail            string
 	ToName             string
 	AllowedOrigins     []string
 	FormTitle          string
-	EmailTemplate      string
 	StatusTemplate     string
 	StatusRedirectURL  string
 	TrustedProxyCIDRs  string
@@ -38,11 +36,9 @@ func Load() *Config {
 		SMTPUsername:       getEnv("SMTP_USERNAME", ""),
 		SMTPPassword:       getEnv("SMTP_PASSWORD", ""),
 		FromEmail:          getEnv("FROM_EMAIL", ""),
-		FromName:           getEnv("FROM_NAME", "FormFling"),
 		ToEmail:            getEnv("TO_EMAIL", ""),
 		ToName:             getEnv("TO_NAME", ""),
 		FormTitle:          getEnv("FORM_TITLE", "Contact Me"),
-		EmailTemplate:      getEnv("EMAIL_TEMPLATE", "./web/templates/email_template.html"),
 		StatusTemplate:     getEnv("STATUS_TEMPLATE", "./web/templates/status_template.html"),
 		StatusRedirectURL:  getEnv("STATUS_REDIRECT_URL", ""),
 		TrustedProxyCIDRs:  getEnv("TRUSTED_PROXY_CIDRS", ""),

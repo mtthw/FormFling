@@ -10,7 +10,6 @@ func TestLoad(t *testing.T) {
 	originalPort := os.Getenv("PORT")
 	originalSMTPHost := os.Getenv("SMTP_HOST")
 	originalOrigins := os.Getenv("ALLOWED_ORIGINS")
-	originalEmailTemplate := os.Getenv("EMAIL_TEMPLATE")
 	originalStatusTemplate := os.Getenv("STATUS_TEMPLATE")
 	originalStatusRedirect := os.Getenv("STATUS_REDIRECT_URL")
 	originalRateLimitMax := os.Getenv("RATE_LIMIT_MAX_EMAILS")
@@ -21,7 +20,6 @@ func TestLoad(t *testing.T) {
 		os.Setenv("PORT", originalPort)
 		os.Setenv("SMTP_HOST", originalSMTPHost)
 		os.Setenv("ALLOWED_ORIGINS", originalOrigins)
-		os.Setenv("EMAIL_TEMPLATE", originalEmailTemplate)
 		os.Setenv("STATUS_TEMPLATE", originalStatusTemplate)
 		os.Setenv("STATUS_REDIRECT_URL", originalStatusRedirect)
 		os.Setenv("RATE_LIMIT_MAX_EMAILS", originalRateLimitMax)
@@ -32,7 +30,6 @@ func TestLoad(t *testing.T) {
 	os.Unsetenv("PORT")
 	os.Unsetenv("SMTP_HOST")
 	os.Unsetenv("ALLOWED_ORIGINS")
-	os.Unsetenv("EMAIL_TEMPLATE")
 	os.Unsetenv("STATUS_TEMPLATE")
 	os.Unsetenv("STATUS_REDIRECT_URL")
 	os.Unsetenv("RATE_LIMIT_MAX_EMAILS")
@@ -52,10 +49,6 @@ func TestLoad(t *testing.T) {
 		t.Errorf("Expected SMTP port 587, got %d", cfg.SMTPPort)
 	}
 
-	if cfg.EmailTemplate != "./web/templates/email_template.html" {
-		t.Errorf("Expected email template './web/templates/email_template.html', got %s", cfg.EmailTemplate)
-	}
-
 	if cfg.StatusTemplate != "./web/templates/status_template.html" {
 		t.Errorf("Expected status template './web/templates/status_template.html', got %s", cfg.StatusTemplate)
 	}
@@ -70,7 +63,6 @@ func TestLoad(t *testing.T) {
 	os.Setenv("PORT", "3000")
 	os.Setenv("SMTP_HOST", "smtp.example.com")
 	os.Setenv("ALLOWED_ORIGINS", "https://example.com,https://test.com")
-	os.Setenv("EMAIL_TEMPLATE", "/custom/email_template.html")
 	os.Setenv("STATUS_TEMPLATE", "/custom/status_template.html")
 	os.Setenv("STATUS_REDIRECT_URL", "https://example.com/contact")
 	os.Setenv("RATE_LIMIT_MAX_EMAILS", "5")
@@ -92,10 +84,6 @@ func TestLoad(t *testing.T) {
 
 	if cfg.AllowedOrigins[0] != "https://example.com" {
 		t.Errorf("Expected https://example.com, got %s", cfg.AllowedOrigins[0])
-	}
-
-	if cfg.EmailTemplate != "/custom/email_template.html" {
-		t.Errorf("Expected email template '/custom/email_template.html', got %s", cfg.EmailTemplate)
 	}
 
 	if cfg.StatusTemplate != "/custom/status_template.html" {

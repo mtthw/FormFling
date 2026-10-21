@@ -9,13 +9,6 @@ type FormData struct {
 	Website string `json:"website"`
 }
 
-type EmailTemplateData struct {
-	FormData      FormData
-	SubmittedTime string
-	SubmittedDate string
-	Origin        string
-}
-
 type Response struct {
 	Status string `json:"status"`
 	Error  string `json:"error,omitempty"`

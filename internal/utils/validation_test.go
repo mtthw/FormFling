@@ -17,6 +17,7 @@ func TestCleanString(t *testing.T) {
 		{"  whitespace  ", "whitespace"},
 		{"TO:someone@test.com", "someone@test.com"},
 		{"href=\"malicious\"", "=\"malicious\""},
+		{"Alice Smith", "Alice Smith"},
 	}
 
 	for _, test := range tests {
